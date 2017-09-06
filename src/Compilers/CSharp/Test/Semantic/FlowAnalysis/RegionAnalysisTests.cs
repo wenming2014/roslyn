@@ -5577,6 +5577,37 @@ class C
             Assert.Equal("x, y", GetSymbolNamesJoined(results.AlwaysAssigned));
         }
 
+        [Fact]
+        public void AssignmentInsideLocal()
+        {
+            var dataFlowAnalysisResults = CompileAndAnalyzeDataFlowStatements(@"
+class Program
+{
+    static void Main()
+    {
+        int x = 3, y = 4;
+        void Local()
+        {
+/*<bind>*/
+            x = 1;
+/*</bind>*/
+        }
+        Local();
+        System.Console.WriteLine(x);
+    }
+}
+");
+            Assert.Equal(null, GetSymbolNamesJoined(dataFlowAnalysisResults.VariablesDeclared));
+            Assert.Equal("x", GetSymbolNamesJoined(dataFlowAnalysisResults.AlwaysAssigned));
+            Assert.Equal(null, GetSymbolNamesJoined(dataFlowAnalysisResults.DataFlowsIn));
+            Assert.Equal("x", GetSymbolNamesJoined(dataFlowAnalysisResults.DataFlowsOut));
+            Assert.Equal(null, GetSymbolNamesJoined(dataFlowAnalysisResults.ReadInside));
+            Assert.Equal("x", GetSymbolNamesJoined(dataFlowAnalysisResults.ReadOutside));
+            Assert.Equal("x", GetSymbolNamesJoined(dataFlowAnalysisResults.WrittenInside));
+            Assert.Equal("x, y", GetSymbolNamesJoined(dataFlowAnalysisResults.WrittenOutside));
+            Assert.Equal("x", GetSymbolNamesJoined(dataFlowAnalysisResults.Captured));
+        }
+
         #endregion
     }
 }
