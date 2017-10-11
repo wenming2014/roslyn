@@ -2423,10 +2423,16 @@ namespace Microsoft.CodeAnalysis.CSharp.CodeGen
                     // is created here. And also that either its value or its indirected value is read out
                     // after the store, in EmitAssignmentPostfix, below.
 
-                    Debug.Assert(assignmentOperator.RefKind == RefKind.None);
-
-                    temp = AllocateTemp(assignmentOperator.Left.Type, assignmentOperator.Left.Syntax);
-                    _builder.EmitLocalStore(temp);
+                    if (assignmentOperator.RefKind == RefKind.None)
+                    {
+                        temp = AllocateTemp(assignmentOperator.Left.Type, assignmentOperator.Left.Syntax);
+                        _builder.EmitLocalStore(temp);
+                    }
+                    else
+                    {
+                        temp = AllocateTemp(assignmentOperator.Left.Type, assignmentOperator.Left.Syntax, LocalSlotConstraints.ByRef);
+                        _builder.EmitLocalStore(temp);
+                    }
                 }
             }
             return temp;
@@ -2539,7 +2545,14 @@ namespace Microsoft.CodeAnalysis.CSharp.CodeGen
         {
             if (temp != null)
             {
-                _builder.EmitLocalLoad(temp);
+                if (useKind == UseKind.UsedAsAddress)
+                {
+                    _builder.EmitLocalAddress(temp);
+                }
+                else
+                {
+                    _builder.EmitLocalLoad(temp);
+                }
                 FreeTemp(temp);
             }
 

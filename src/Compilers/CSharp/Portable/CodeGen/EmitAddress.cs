@@ -139,7 +139,8 @@ namespace Microsoft.CodeAnalysis.CSharp.CodeGen
 
                 case BoundKind.AssignmentOperator:
                     var assignment = (BoundAssignmentOperator)expression;
-                    if (assignment.RefKind == RefKind.None)
+                    if (assignment.RefKind == RefKind.None ||
+                        !HasHome(assignment, addressKind))
                     {
                         goto default;
                     }
@@ -414,7 +415,9 @@ namespace Microsoft.CodeAnalysis.CSharp.CodeGen
                     return HasHome(((BoundSequence)expression).Value, addressKind);
 
                 case BoundKind.AssignmentOperator:
-                    return ((BoundAssignmentOperator)expression).RefKind != RefKind.None;
+                    var assignRefKind = ((BoundAssignmentOperator)expression).RefKind;
+                    return assignRefKind == RefKind.Ref ||
+                        (IsReadOnly(addressKind) && assignRefKind == RefKind.RefReadOnly);
 
                 case BoundKind.ComplexConditionalReceiver:
                     Debug.Assert(HasHome(((BoundComplexConditionalReceiver)expression).ValueTypeReceiver, addressKind));

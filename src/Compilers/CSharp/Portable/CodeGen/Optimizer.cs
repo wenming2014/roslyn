@@ -1982,6 +1982,12 @@ namespace Microsoft.CodeAnalysis.CSharp.CodeGen
                 return base.VisitAssignmentOperator(node);
             }
 
+            // ref assignments must always perform assignment (operands could still be rewritten)
+            if (node.RefKind != RefKind.None)
+            {
+                return base.VisitAssignmentOperator(node);
+            }
+
             // indirect local store is not special. (operands still could be rewritten) 
             // NOTE: if Lhs is a stack local, it will be handled as a read and possibly duped.
             var isIndirectLocalStore = left.LocalSymbol.RefKind != RefKind.None && node.RefKind == RefKind.None;
