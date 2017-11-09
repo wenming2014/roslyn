@@ -13,6 +13,79 @@ Imports Xunit
 Public MustInherit Class BasicTestBase
     Inherits BasicTestBaseBase
 
+
+    Protected Function CreateVisualBasicCompilation(
+        code As XCData,
+        Optional ParseOptions As VisualBasicParseOptions = Nothing,
+        Optional CompilationOptions As VisualBasicCompilationOptions = Nothing,
+        Optional assemblyName As String = Nothing,
+        Optional referencedAssemblies As IEnumerable(Of MetadataReference) = Nothing) As VisualBasicCompilation
+        Return CreateVisualBasicCompilation(assemblyName, code, ParseOptions, CompilationOptions, referencedAssemblies, referencedCompilations:=Nothing)
+    End Function
+
+
+    Protected Function CreateVisualBasicCompilation(
+            assemblyName As String,
+            code As XCData,
+            Optional ParseOptions As VisualBasicParseOptions = Nothing,
+            Optional CompilationOptions As VisualBasicCompilationOptions = Nothing,
+            Optional referencedAssemblies As IEnumerable(Of MetadataReference) = Nothing,
+            Optional referencedCompilations As IEnumerable(Of Compilation) = Nothing) As VisualBasicCompilation
+        Return CreateVisualBasicCompilation(
+            assemblyName,
+            code.Value,
+            ParseOptions,
+            CompilationOptions,
+            referencedAssemblies,
+            referencedCompilations)
+    End Function
+
+    Protected Function CreateVisualBasicCompilation(
+            code As String,
+            Optional parseOptions As VisualBasicParseOptions = Nothing,
+            Optional compilationOptions As VisualBasicCompilationOptions = Nothing,
+            Optional assemblyName As String = Nothing,
+            Optional referencedAssemblies As IEnumerable(Of MetadataReference) = Nothing) As VisualBasicCompilation
+        Return CreateVisualBasicCompilation(assemblyName, code, parseOptions, compilationOptions, referencedAssemblies, referencedCompilations:=Nothing)
+    End Function
+
+    Protected Function CreateVisualBasicCompilation(
+            assemblyName As String,
+            code As String,
+            Optional parseOptions As VisualBasicParseOptions = Nothing,
+            Optional compilationOptions As VisualBasicCompilationOptions = Nothing,
+            Optional referencedAssemblies As IEnumerable(Of MetadataReference) = Nothing,
+            Optional referencedCompilations As IEnumerable(Of Compilation) = Nothing) As VisualBasicCompilation
+        If assemblyName Is Nothing Then
+            assemblyName = GetUniqueName()
+        End If
+
+        If parseOptions Is Nothing Then
+            parseOptions = VisualBasicParseOptions.Default
+        End If
+
+        If compilationOptions Is Nothing Then
+            compilationOptions = New VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+        End If
+
+        Dim references = New List(Of MetadataReference)()
+        If referencedAssemblies Is Nothing Then
+            references.Add(MscorlibRef)
+            references.Add(SystemRef)
+            references.Add(SystemCoreRef)
+            references.Add(MsvbRef)
+            references.Add(SystemXmlRef)
+            references.Add(SystemXmlLinqRef)
+        Else
+            references.AddRange(referencedAssemblies)
+        End If
+
+        AddReferencedCompilations(referencedCompilations, references)
+        Dim tree = VisualBasicSyntaxTree.ParseText(code, options:=parseOptions)
+        Return VisualBasicCompilation.Create(assemblyName, {tree}, references, compilationOptions)
+    End Function
+
+
     Protected Overloads Function GetCompilationForEmit(
         source As IEnumerable(Of String),
         additionalRefs() As MetadataReference,
