@@ -9,7 +9,7 @@ using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Toolchains;
 using BenchmarkDotNet.Toolchains.Results;
 
-namespace Perf
+namespace CompilerPerfTests
 {
     internal sealed class ExternalProcessGenerator : IGenerator
     {

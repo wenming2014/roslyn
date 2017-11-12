@@ -12,7 +12,7 @@ using BenchmarkDotNet.Toolchains;
 using BenchmarkDotNet.Toolchains.Parameters;
 using BenchmarkDotNet.Toolchains.Results;
 
-namespace Perf
+namespace CompilerPerfTests
 {
     /// <summary>
     /// Executor designed to take a Benchmark that lists a target executable

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
-namespace Perf
+namespace CompilerPerfTests
 {
     internal static class PerfOutputParser
     {

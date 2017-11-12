@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CompilerPerfTests": {
+      "commandName": "Project",
+      "commandLineArgs": "--unit"
+    }
+  }
+}

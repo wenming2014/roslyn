@@ -5,7 +5,7 @@ using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Parameters;
 using BenchmarkDotNet.Running;
 
-namespace Perf
+namespace CompilerPerfTests
 {
     internal sealed class ExternalProcessBenchmark : Benchmark
     {

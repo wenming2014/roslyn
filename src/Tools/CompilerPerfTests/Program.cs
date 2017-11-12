@@ -12,7 +12,7 @@ using BenchmarkDotNet.Loggers;
 using BenchmarkDotNet.Parameters;
 using BenchmarkDotNet.Running;
 
-namespace Perf
+namespace CompilerPerfTests
 {
     public static class Program
     {
@@ -32,77 +32,25 @@ namespace Perf
             }
         }
 
-        static int Main(string[] args)
+        public static int Main(string[] args)
         {
-            var slnDir = Path.GetFullPath(Path.Combine(
-                AppContext.BaseDirectory,
-                "../../../../../../"));
-
-            var config = new EndToEndRoslynConfig(
-                Path.Combine(slnDir, "Binaries/Release/Exes/csc/netcoreapp2.0/csc.dll"));
-            var benchmarks = MakeBenchmarks(slnDir, config, new[] { "HEAD^", "HEAD" });
-
-            var summary = BenchmarkRunner.Run(benchmarks, config);
-            return 0;
-        }
-
-        private static Func<string, int> BuildRoslyn(string slnDir)
-        {
-            var compilersDir = Path.Combine(slnDir, "src/Compilers");
-            var cscProj = Path.Combine(compilersDir, "CSharp/csc/csc.csproj");
-
-            return (commit) =>
+            if (args.Length == 0)
             {
-                Console.WriteLine($"Building commit: {commit}");
-                Console.WriteLine();
+                var slnDir = Path.GetFullPath(Path.Combine(
+                    AppContext.BaseDirectory,
+                    "../../../../../../"));
 
-                const int Failed = 1;
-
-                // git show -s --pretty=short COMMIT
-                if (RunProcess("git", $"show -s --pretty=short {commit}") != 0)
-                {
-                    return Failed;
-                }
-
-                Console.WriteLine();
-                // git checkout COMMIT src/Compilers
-                if (RunProcess("git", $"checkout {commit} \"{compilersDir}\"") != 0)
-                {
-                    return Failed;
-                };
-
-                // restore.cmd
-                if (RunProcess($"\"{Path.Combine(slnDir, "Restore.cmd")}\"") != 0)
-                {
-                    return Failed;
-                }
-
-                // dotnet build -c Release csc.csproj
-                if (RunProcess("dotnet", $"build -c Release \"{cscProj}\"") != 0)
-                {
-                    return Failed;
-                }
-
-                return 0;
-            };
-        }
-
-        private static int RunProcess(string fileName, string arguments = null)
-        {
-            var psi = new ProcessStartInfo
+                var config = new EndToEndRoslynConfig(
+                    Path.Combine(slnDir, "Binaries/Release/Exes/csc/netcoreapp2.0/csc.dll"));
+                var benchmarks = MakeBenchmarks(slnDir, config, new[] { "HEAD^", "HEAD" });
+                var summary = BenchmarkRunner.Run(benchmarks, config);
+            }
+            else
             {
-                FileName = fileName
-            };
-
-            if (arguments != null)
-            {
-                psi.Arguments = arguments;
+                var summary = BenchmarkRunner.Run<EmitTest>();
             }
 
-            var proc = new Process() { StartInfo = psi };
-            proc.Start();
-            proc.WaitForExit();
-            return proc.ExitCode;
+            return 0;
         }
 
         /// <summary>
@@ -131,7 +79,7 @@ namespace Perf
                 benchmarks[i] = new ExternalProcessBenchmark(
                     Path.Combine(slnDir, "Binaries/CodeAnalysisRepro"),
                     "-noconfig @repro.rsp",
-                    BuildRoslyn(slnDir),
+                    commit => Utils.CheckoutAndBuildCsc(slnDir, commit),
                     config.GetJobs().Single(),
                     MakeParameterInstances(commits[i]));
             }

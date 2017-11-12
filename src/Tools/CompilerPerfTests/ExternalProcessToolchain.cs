@@ -5,7 +5,7 @@ using BenchmarkDotNet.Loggers;
 using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Toolchains;
 
-namespace Perf
+namespace CompilerPerfTests
 {
     /// <summary>
     /// This toolchain is designed to take an existing managed application
