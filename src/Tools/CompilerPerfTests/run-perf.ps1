@@ -19,7 +19,8 @@ try
         [IO.Compression.ZipFile]::ExtractToDirectory($tmpFile, $BinariesPath)
     }
 
-    Exec-Block { & dotnet run -c Release CompilerPerfTests.csproj }
+    $dotnetArgs = "run -c Release CompilerPerfTests.csproj " + $args
+    Exec-Command "dotnet" $dotnetArgs
 }
 catch {
     Write-Host $_

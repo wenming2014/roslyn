@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,7 @@ using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Loggers;
 using BenchmarkDotNet.Parameters;
 using BenchmarkDotNet.Running;
+using Mono.Options;
 
 namespace CompilerPerfTests
 {
@@ -34,7 +36,27 @@ namespace CompilerPerfTests
 
         public static int Main(string[] args)
         {
-            if (args.Length == 0)
+            bool runEmitTests = false;
+            bool runParsingTests = false;
+
+            var options = new OptionSet
+            {
+                { "emit", "Run emit tests", (_) => runEmitTests = true },
+                { "parsing", "Run parsing tests", (_) => runParsingTests = true }
+            };
+
+            List<string> extra;
+            try
+            {
+                extra = options.Parse(args);
+            }
+            catch (OptionException e)
+            {
+                Console.WriteLine("CompilerPerfTests: " + e.Message);
+                return 1;
+            }
+
+            if (!runEmitTests && !runParsingTests)
             {
                 var slnDir = Path.GetFullPath(Path.Combine(
                     AppContext.BaseDirectory,
@@ -47,7 +69,14 @@ namespace CompilerPerfTests
             }
             else
             {
-                var summary = BenchmarkRunner.Run<EmitTest>();
+                if (runEmitTests)
+                {
+                    var summary = BenchmarkRunner.Run<EmitTest>();
+                }
+                else
+                {
+                    var summary = BenchmarkRunner.Run<ParsingTest>();
+                }
             }
 
             return 0;
