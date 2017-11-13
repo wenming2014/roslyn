@@ -14,14 +14,12 @@ namespace Microsoft.CodeAnalysis
     /// <summary>
     /// A list of <see cref="SyntaxNode"/>.
     /// </summary>
-    public partial struct SyntaxList<TNode> : IReadOnlyList<TNode>, IEquatable<SyntaxList<TNode>>
+    public readonly partial struct SyntaxList<TNode> : IReadOnlyList<TNode>, IEquatable<SyntaxList<TNode>>
         where TNode : SyntaxNode
     {
-        private readonly SyntaxNode _node;
-
         internal SyntaxList(SyntaxNode node)
         {
-            _node = node;
+            Node = node;
         }
 
         /// <summary>
@@ -60,13 +58,7 @@ namespace Microsoft.CodeAnalysis
             return builder.ToList().Node;
         }
 
-        internal SyntaxNode Node
-        {
-            get
-            {
-                return _node;
-            }
-        }
+        internal SyntaxNode Node { get; }
 
         /// <summary>
         /// The number of nodes in the list.
@@ -75,7 +67,7 @@ namespace Microsoft.CodeAnalysis
         {
             get
             {
-                return _node == null ? 0 : (_node.IsList ? _node.SlotCount : 1);
+                return Node == null ? 0 : (Node.IsList ? Node.SlotCount : 1);
             }
         }
 
@@ -88,18 +80,18 @@ namespace Microsoft.CodeAnalysis
         {
             get
             {
-                if (_node != null)
+                if (Node != null)
                 {
-                    if (_node.IsList)
+                    if (Node.IsList)
                     {
-                        if (unchecked((uint)index < (uint)_node.SlotCount))
+                        if (unchecked((uint)index < (uint)Node.SlotCount))
                         {
-                            return (TNode)_node.GetNodeSlot(index);
+                            return (TNode)Node.GetNodeSlot(index);
                         }
                     }
                     else if (index == 0)
                     {
-                        return (TNode)_node;
+                        return (TNode)Node;
                     }
                 }
                 throw new ArgumentOutOfRangeException();
@@ -108,13 +100,13 @@ namespace Microsoft.CodeAnalysis
 
         internal SyntaxNode ItemInternal(int index)
         {
-            if (_node.IsList)
+            if (Node.IsList)
             {
-                return _node.GetNodeSlot(index);
+                return Node.GetNodeSlot(index);
             }
 
             Debug.Assert(index == 0);
-            return _node;
+            return Node;
         }
 
         /// <summary>
@@ -163,7 +155,7 @@ namespace Microsoft.CodeAnalysis
         /// </returns>
         public override string ToString()
         {
-            return _node != null ? _node.ToString() : string.Empty;
+            return Node != null ? Node.ToString() : string.Empty;
         }
 
         /// <summary>
@@ -176,7 +168,7 @@ namespace Microsoft.CodeAnalysis
         /// </returns>
         public string ToFullString()
         {
-            return _node != null ? _node.ToFullString() : string.Empty;
+            return Node != null ? Node.ToFullString() : string.Empty;
         }
 
         /// <summary>
@@ -380,8 +372,8 @@ namespace Microsoft.CodeAnalysis
         /// </summary>
         public bool Any()
         {
-            Debug.Assert(_node == null || Count != 0);
-            return _node != null;
+            Debug.Assert(Node == null || Count != 0);
+            return Node != null;
         }
 
         // for debugging
@@ -420,17 +412,17 @@ namespace Microsoft.CodeAnalysis
 
         public static bool operator ==(SyntaxList<TNode> left, SyntaxList<TNode> right)
         {
-            return left._node == right._node;
+            return left.Node == right.Node;
         }
 
         public static bool operator !=(SyntaxList<TNode> left, SyntaxList<TNode> right)
         {
-            return left._node != right._node;
+            return left.Node != right.Node;
         }
 
         public bool Equals(SyntaxList<TNode> other)
         {
-            return _node == other._node;
+            return Node == other.Node;
         }
 
         public override bool Equals(object obj)
@@ -440,12 +432,12 @@ namespace Microsoft.CodeAnalysis
 
         public override int GetHashCode()
         {
-            return _node?.GetHashCode() ?? 0;
+            return Node?.GetHashCode() ?? 0;
         }
 
         public static implicit operator SyntaxList<TNode>(SyntaxList<SyntaxNode> nodes)
         {
-            return new SyntaxList<TNode>(nodes._node);
+            return new SyntaxList<TNode>(nodes.Node);
         }
 
         public static implicit operator SyntaxList<SyntaxNode>(SyntaxList<TNode> nodes)

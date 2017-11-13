@@ -15,7 +15,7 @@ namespace Microsoft.CodeAnalysis
     /// <summary>
     /// A list of <see cref="SyntaxNodeOrToken"/> structures.
     /// </summary>
-    public struct SyntaxNodeOrTokenList : IEquatable<SyntaxNodeOrTokenList>, IReadOnlyCollection<SyntaxNodeOrToken>
+    public readonly struct SyntaxNodeOrTokenList : IEquatable<SyntaxNodeOrTokenList>, IReadOnlyCollection<SyntaxNodeOrToken>
     {
         /// <summary>
         /// The underlying field

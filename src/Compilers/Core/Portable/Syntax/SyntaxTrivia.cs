@@ -17,7 +17,7 @@ namespace Microsoft.CodeAnalysis
 #pragma warning restore RS0010
     [DebuggerDisplay("{GetDebuggerDisplay(), nq}")]
     [StructLayout(LayoutKind.Auto)]
-    public struct SyntaxTrivia : IEquatable<SyntaxTrivia>
+    public readonly struct SyntaxTrivia : IEquatable<SyntaxTrivia>
     {
         internal static readonly Func<SyntaxTrivia, bool> Any = t => true;
 
