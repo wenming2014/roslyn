@@ -69,13 +69,16 @@ namespace CompilerPerfTests
             }
             else
             {
+                var config = DefaultConfig.Instance
+                    .With(RankColumn.Arabic);
+
                 if (runEmitTests)
                 {
-                    var summary = BenchmarkRunner.Run<EmitTest>();
+                    var summary = BenchmarkRunner.Run<EmitTest>(config);
                 }
                 else
                 {
-                    var summary = BenchmarkRunner.Run<ParsingTest>();
+                    var summary = BenchmarkRunner.Run<ParsingTest>(config);
                 }
             }
 
