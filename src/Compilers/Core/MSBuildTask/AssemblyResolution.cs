@@ -2,6 +2,7 @@
 
 using Roslyn.Utilities;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 
@@ -68,9 +69,23 @@ namespace Microsoft.CodeAnalysis.BuildTasks
                 case "System.Reflection":
                     return TryRedirect(name, s_b03f5f7f11d50a3a, 4, 1, 1, 0);
 
+                // Assemblies which are not found next to the build task
+                case "System.IO.Pipes.AccessControl":
+                    return true;
             }
 
             return false;
+        }
+
+        private static Assembly LoadAssemblyWithRedirects(AssemblyName name)
+        {
+            switch (name.Name)
+            {
+                case "System.IO.Pipes.AccessControl":
+                    return TryRedirectToRuntimesDir(name);
+            }
+
+            return Assembly.Load(name);
         }
 
         private static bool TryRedirect(AssemblyName name, byte[] token, int major, int minor, int build, int revision)
@@ -83,6 +98,21 @@ namespace Microsoft.CodeAnalysis.BuildTasks
             }
 
             return false;
+        }
+
+        private static readonly string s_assemblyLocation = Utilities.TryGetAssemblyPath(typeof(AssemblyResolution).GetTypeInfo().Assembly);
+        private static Assembly TryRedirectToRuntimesDir(AssemblyName name)
+        {
+            if (s_assemblyLocation == null)
+            {
+                return null;
+            }
+
+            var taskDir = Path.GetDirectoryName(s_assemblyLocation);
+            var osId = PlatformInformation.IsWindows ? "win" : "unix";
+            var runtimeDir = Path.Combine(taskDir, "runtimes", osId, "lib", "netstandard1.3");
+
+            if (File.Exists(Path.Combine()))
         }
 
         private static bool KeysEqual(byte[] left, byte[] right)
