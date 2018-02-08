@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 #if NET46
-using System.Runtime;
 #else
 using System.Runtime.Loader;
 #endif
@@ -116,16 +115,16 @@ namespace Microsoft.CodeAnalysis.CommandLine
             {
                 // Enable multi-core JITing
                 // https://blogs.msdn.microsoft.com/dotnet/2012/10/18/an-easy-solution-for-improving-app-launch-performance/
-                var profileRoot = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "RoslynCompiler",
-                    "ProfileOptimization");
-                var assemblyName = Assembly.GetExecutingAssembly().GetName();
-                var profileName = assemblyName.Name + assemblyName.Version + ".profile";
-                Directory.CreateDirectory(profileRoot);
+//                var profileRoot = Path.Combine(
+//                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+//                    "RoslynCompiler",
+//                    "ProfileOptimization");
+//                var assemblyName = Assembly.GetExecutingAssembly().GetName();
+//                var profileName = assemblyName.Name + assemblyName.Version + ".profile";
+//                Directory.CreateDirectory(profileRoot);
 #if NET46
-                ProfileOptimization.SetProfileRoot(profileRoot);
-                ProfileOptimization.StartProfile(profileName);
+ //               ProfileOptimization.SetProfileRoot(profileRoot);
+ //               ProfileOptimization.StartProfile(profileName);
 #else
                 AssemblyLoadContext.Default.SetProfileOptimizationRoot(profileRoot);
                 AssemblyLoadContext.Default.StartProfileOptimization(profileName);
