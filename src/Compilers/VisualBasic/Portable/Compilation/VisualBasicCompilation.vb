@@ -12,6 +12,7 @@ Imports Microsoft.CodeAnalysis.CodeGen
 Imports Microsoft.CodeAnalysis.Diagnostics
 Imports Microsoft.CodeAnalysis.Emit
 Imports Microsoft.CodeAnalysis.InternalUtilities
+Imports Microsoft.CodeAnalysis.Options
 Imports Microsoft.CodeAnalysis.PooledObjects
 Imports Microsoft.CodeAnalysis.Symbols
 Imports Microsoft.CodeAnalysis.Text
@@ -65,6 +66,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         ''' We do so by creating a new reference manager for such compilation. 
         ''' </summary>
         Private _referenceManager As ReferenceManager
+
+        Private ReadOnly _fileOptionsManager As FileOptionsManager
 
         ''' <summary>
         ''' The options passed to the constructor of the Compilation
@@ -388,7 +391,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 hostObjectType,
                 isSubmission,
                 referenceManager:=Nothing,
-                reuseReferenceManager:=False)
+                reuseReferenceManager:=False,
+                fileOptionsManagerToReuse:=Nothing)
 
             If syntaxTrees IsNot Nothing Then
                 c = c.AddSyntaxTrees(syntaxTrees)
@@ -414,6 +418,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             isSubmission As Boolean,
             referenceManager As ReferenceManager,
             reuseReferenceManager As Boolean,
+            fileOptionsManagerToReuse As FileOptionsManager,
             Optional eventQueue As AsyncQueue(Of CompilationEvent) = Nothing
         )
             MyBase.New(assemblyName, references, SyntaxTreeCommonFeatures(syntaxTrees), isSubmission, eventQueue)
@@ -452,6 +457,13 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                                               If(referenceManager IsNot Nothing, referenceManager.ObservedMetadata, Nothing))
             End If
 
+            If fileOptionsManagerToReuse IsNot Nothing Then
+                _fileOptionsManager = fileOptionsManagerToReuse
+                _fileOptionsManager.AssertCanReuseForCompilation(Me)
+            Else
+                _fileOptionsManager = New FileOptionsManager(_options.FileOptionsProvider)
+            End If
+
             Debug.Assert(_lazyAssemblySymbol Is Nothing)
             If Me.EventQueue IsNot Nothing Then
                 Me.EventQueue.TryEnqueue(New CompilationStartedEvent(Me))
@@ -484,6 +496,26 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Return If(result, LanguageVersion.Default.MapSpecifiedToEffectiveVersion)
         End Function
 
+        Public Overrides Function GetOptionsForSyntaxTree(tree As SyntaxTree) As OptionSet
+            If tree Is Nothing Then
+                Throw New ArgumentNullException(NameOf(tree))
+            End If
+
+            If Not ContainsSyntaxTree(tree) Then
+                Throw New ArgumentException(CodeAnalysisResources.InvalidTree)
+            End If
+
+            Return _fileOptionsManager.GetOptionsForFile(tree.FilePath)
+        End Function
+
+        Public Overrides Function GetOptionsForAdditionalText(additionalText As AdditionalText) As OptionSet
+            If additionalText Is Nothing Then
+                Throw New ArgumentNullException(NameOf(additionalText))
+            End If
+
+            Return _fileOptionsManager.GetOptionsForFile(additionalText.Path)
+        End Function
+
         ''' <summary>
         ''' Create a duplicate of this compilation with different symbol instances
         ''' </summary>
@@ -503,6 +535,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Me.IsSubmission,
                 _referenceManager,
                 reuseReferenceManager:=True,
+                fileOptionsManagerToReuse:=_fileOptionsManager,
                 eventQueue:=Nothing) ' no event queue when cloning
         End Function
 
@@ -527,7 +560,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Me.HostObjectType,
                 Me.IsSubmission,
                 _referenceManager,
-                reuseReferenceManager:=Not referenceDirectivesChanged)
+                reuseReferenceManager:=Not referenceDirectivesChanged,
+                fileOptionsManagerToReuse:=_fileOptionsManager)
         End Function
 
         ''' <summary>
@@ -552,7 +586,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Me.HostObjectType,
                 Me.IsSubmission,
                 _referenceManager,
-                reuseReferenceManager:=String.Equals(assemblyName, Me.AssemblyName, StringComparison.Ordinal))
+                reuseReferenceManager:=String.Equals(assemblyName, Me.AssemblyName, StringComparison.Ordinal),
+                fileOptionsManagerToReuse:=_fileOptionsManager)
         End Function
 
         Public Shadows Function WithReferences(ParamArray newReferences As MetadataReference()) As VisualBasicCompilation
@@ -593,7 +628,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Me.HostObjectType,
                 Me.IsSubmission,
                 referenceManager:=Nothing,
-                reuseReferenceManager:=False)
+                reuseReferenceManager:=False,
+                fileOptionsManagerToReuse:=_fileOptionsManager)
             Return c
         End Function
 
@@ -632,6 +668,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 declTable = AddEmbeddedTrees(declTable, embeddedTrees)
             End If
 
+            Dim reuseFileOptionsManager = Object.Equals(Me.Options.FileOptionsProvider, newOptions.FileOptionsProvider)
+
             c = New VisualBasicCompilation(
                 Me.AssemblyName,
                 newOptions,
@@ -646,7 +684,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Me.HostObjectType,
                 Me.IsSubmission,
                 _referenceManager,
-                reuseReferenceManager:=_options.CanReuseCompilationReferenceManager(newOptions))
+                reuseReferenceManager:=_options.CanReuseCompilationReferenceManager(newOptions),
+                fileOptionsManagerToReuse:=If(reuseFileOptionsManager, _fileOptionsManager, Nothing))
             Return c
         End Function
 
@@ -674,7 +713,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 info?.GlobalsType,
                 info IsNot Nothing,
                 _referenceManager,
-                reuseReferenceManager:=True)
+                reuseReferenceManager:=True,
+                fileOptionsManagerToReuse:=_fileOptionsManager)
         End Function
 
         ''' <summary>
@@ -696,6 +736,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Me.IsSubmission,
                 _referenceManager,
                 reuseReferenceManager:=True,
+                fileOptionsManagerToReuse:=_fileOptionsManager,
                 eventQueue:=eventQueue)
         End Function
 

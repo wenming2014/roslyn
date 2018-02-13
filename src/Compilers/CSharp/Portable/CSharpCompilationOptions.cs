@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis.PooledObjects;
 using Roslyn.Utilities;
 using System.Diagnostics;
 using System.ComponentModel;
+using Microsoft.CodeAnalysis.Options;
 
 namespace Microsoft.CodeAnalysis.CSharp
 {
@@ -78,7 +79,8 @@ namespace Microsoft.CodeAnalysis.CSharp
                    metadataImportOptions: MetadataImportOptions.Public,
                    referencesSupersedeLowerVersions: false,
                    publicSign: publicSign,
-                   topLevelBinderFlags: BinderFlags.None)
+                   topLevelBinderFlags: BinderFlags.None,
+                   fileOptionsProvider: null)
         {
         }
 
@@ -113,13 +115,14 @@ namespace Microsoft.CodeAnalysis.CSharp
             MetadataImportOptions metadataImportOptions,
             bool referencesSupersedeLowerVersions,
             bool publicSign,
-            BinderFlags topLevelBinderFlags)
+            BinderFlags topLevelBinderFlags,
+            FileOptionsProvider fileOptionsProvider)
             : base(outputKind, reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    cryptoKeyContainer, cryptoKeyFile, cryptoPublicKey, delaySign, publicSign, optimizationLevel, checkOverflow,
                    platform, generalDiagnosticOption, warningLevel, specificDiagnosticOptions.ToImmutableDictionaryOrEmpty(),
                    concurrentBuild, deterministic, currentLocalTime, debugPlusMode, xmlReferenceResolver,
                    sourceReferenceResolver, metadataReferenceResolver, assemblyIdentityComparer,
-                   strongNameProvider, metadataImportOptions, referencesSupersedeLowerVersions)
+                   strongNameProvider, metadataImportOptions, referencesSupersedeLowerVersions, fileOptionsProvider)
         {
             this.Usings = usings.AsImmutableOrEmpty();
             this.AllowUnsafe = allowUnsafe;
@@ -152,6 +155,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             metadataReferenceResolver: other.MetadataReferenceResolver,
             assemblyIdentityComparer: other.AssemblyIdentityComparer,
             strongNameProvider: other.StrongNameProvider,
+            fileOptionsProvider: other.FileOptionsProvider,
             metadataImportOptions: other.MetadataImportOptions,
             referencesSupersedeLowerVersions: other.ReferencesSupersedeLowerVersions,
             reportSuppressedDiagnostics: other.ReportSuppressedDiagnostics,
@@ -495,6 +499,16 @@ namespace Microsoft.CodeAnalysis.CSharp
             return new CSharpCompilationOptions(this) { StrongNameProvider = provider };
         }
 
+        public new CSharpCompilationOptions WithFileOptionsProvider(FileOptionsProvider provider)
+        {
+            if (ReferenceEquals(provider, this.FileOptionsProvider))
+            {
+                return this;
+            }
+
+            return new CSharpCompilationOptions(this) { FileOptionsProvider = provider };
+        }
+
         protected override CompilationOptions CommonWithConcurrentBuild(bool concurrent) => WithConcurrentBuild(concurrent);
         protected override CompilationOptions CommonWithDeterministic(bool deterministic) => WithDeterministic(deterministic);
 
@@ -520,6 +534,9 @@ namespace Microsoft.CodeAnalysis.CSharp
 
         protected override CompilationOptions CommonWithStrongNameProvider(StrongNameProvider provider) =>
             WithStrongNameProvider(provider);
+
+        protected override CompilationOptions CommonWithFileOptionsProvider(FileOptionsProvider provider) =>
+            WithFileOptionsProvider(provider);
 
         internal override CompilationOptions CommonWithMetadataImportOptions(MetadataImportOptions value) =>
             WithMetadataImportOptions(value);
@@ -791,7 +808,8 @@ namespace Microsoft.CodeAnalysis.CSharp
                    metadataImportOptions: MetadataImportOptions.Public,
                    referencesSupersedeLowerVersions: false,
                    publicSign: false,
-                   topLevelBinderFlags: BinderFlags.None)
+                   topLevelBinderFlags: BinderFlags.None,
+                   fileOptionsProvider: null)
         {
         }
     }

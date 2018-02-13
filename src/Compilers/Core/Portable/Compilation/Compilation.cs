@@ -18,6 +18,7 @@ using Microsoft.CodeAnalysis.CodeGen;
 using Microsoft.CodeAnalysis.Collections;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.Options;
 using Microsoft.CodeAnalysis.PooledObjects;
 using Microsoft.CodeAnalysis.Symbols;
 using Roslyn.Utilities;
@@ -110,6 +111,20 @@ namespace Microsoft.CodeAnalysis
         /// Gets the source language ("C#" or "Visual Basic").
         /// </summary>
         public abstract string Language { get; }
+
+        /// <summary>
+        /// Fetches an <see cref="OptionSet"/> which contains file specific configuration for diagnostics and analyzers.
+        /// </summary>
+        /// <param name="tree">The <see cref="SyntaxTree"/> to fetch for. Must be non-null and exist in the compilation.</param>
+        /// <returns>A non-null <see cref="OptionSet"/>.</returns>
+        public abstract OptionSet GetOptionsForSyntaxTree(SyntaxTree tree);
+
+        /// <summary>
+        /// Fetches an <see cref="OptionSet"/> which contains file specific configuration for diagnostics and analyzers.
+        /// </summary>
+        /// <param name="additionalText">The <see cref="AdditionalText"/> to fetch for. Must be non-null.</param>
+        /// <returns>A non-null <see cref="OptionSet"/>.</returns>
+        public abstract OptionSet GetOptionsForAdditionalText(AdditionalText additionalText);
 
         internal static void ValidateScriptCompilationParameters(Compilation previousScriptCompilation, Type returnType, ref Type globalsType)
         {

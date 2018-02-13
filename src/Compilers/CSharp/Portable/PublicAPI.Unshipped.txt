@@ -1,1 +1,4 @@
+Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions.WithFileOptionsProvider(Microsoft.CodeAnalysis.Options.FileOptionsProvider provider) -> Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions
+override Microsoft.CodeAnalysis.CSharp.CSharpCompilation.GetOptionsForAdditionalText(Microsoft.CodeAnalysis.AdditionalText additionalText) -> Microsoft.CodeAnalysis.Options.OptionSet
+override Microsoft.CodeAnalysis.CSharp.CSharpCompilation.GetOptionsForSyntaxTree(Microsoft.CodeAnalysis.SyntaxTree tree) -> Microsoft.CodeAnalysis.Options.OptionSet
 Microsoft.CodeAnalysis.CSharp.LanguageVersion.CSharp7_2 = 702 -> Microsoft.CodeAnalysis.CSharp.LanguageVersion

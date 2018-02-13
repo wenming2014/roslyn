@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Microsoft.CodeAnalysis.Options;
 using Microsoft.CodeAnalysis.PooledObjects;
 using Roslyn.Utilities;
 
@@ -227,6 +228,11 @@ namespace Microsoft.CodeAnalysis
         public StrongNameProvider StrongNameProvider { get; protected set; }
 
         /// <summary>
+        /// Provides options for analyzer consumption that apply to specific files. Null if no file-specific options exist.
+        /// </summary>
+        public FileOptionsProvider FileOptionsProvider { get; protected set; }
+
+        /// <summary>
         /// Used to compare assembly identities. May implement unification and portability policies specific to the target platform.
         /// <see cref="AssemblyIdentityComparer.Default"/> if not specified.
         /// </summary>
@@ -278,7 +284,8 @@ namespace Microsoft.CodeAnalysis
             AssemblyIdentityComparer assemblyIdentityComparer,
             StrongNameProvider strongNameProvider,
             MetadataImportOptions metadataImportOptions,
-            bool referencesSupersedeLowerVersions)
+            bool referencesSupersedeLowerVersions,
+            FileOptionsProvider fileOptionsProvider)
         {
             this.OutputKind = outputKind;
             this.ModuleName = moduleName;
@@ -288,6 +295,7 @@ namespace Microsoft.CodeAnalysis
             this.CryptoKeyFile = string.IsNullOrEmpty(cryptoKeyFile) ? null : cryptoKeyFile;
             this.CryptoPublicKey = cryptoPublicKey.NullToEmpty();
             this.DelaySign = delaySign;
+            this.PublicSign = publicSign;
             this.CheckOverflow = checkOverflow;
             this.Platform = platform;
             this.GeneralDiagnosticOption = generalDiagnosticOption;
@@ -306,7 +314,7 @@ namespace Microsoft.CodeAnalysis
             this.AssemblyIdentityComparer = assemblyIdentityComparer ?? AssemblyIdentityComparer.Default;
             this.MetadataImportOptions = metadataImportOptions;
             this.ReferencesSupersedeLowerVersions = referencesSupersedeLowerVersions;
-            this.PublicSign = publicSign;
+            this.FileOptionsProvider = fileOptionsProvider;
 
             _lazyErrors = new Lazy<ImmutableArray<Diagnostic>>(() =>
             {
@@ -463,6 +471,11 @@ namespace Microsoft.CodeAnalysis
             return CommonWithStrongNameProvider(provider);
         }
 
+        public CompilationOptions WithFileOptionsProvider(FileOptionsProvider provider)
+        {
+            return CommonWithFileOptionsProvider(provider);
+        }
+
         public CompilationOptions WithModuleName(string moduleName)
         {
             return CommonWithModuleName(moduleName);
@@ -516,6 +529,7 @@ namespace Microsoft.CodeAnalysis
         protected abstract CompilationOptions CommonWithMetadataReferenceResolver(MetadataReferenceResolver resolver);
         protected abstract CompilationOptions CommonWithAssemblyIdentityComparer(AssemblyIdentityComparer comparer);
         protected abstract CompilationOptions CommonWithStrongNameProvider(StrongNameProvider provider);
+        protected abstract CompilationOptions CommonWithFileOptionsProvider(FileOptionsProvider provider);
         protected abstract CompilationOptions CommonWithGeneralDiagnosticOption(ReportDiagnostic generalDiagnosticOption);
         protected abstract CompilationOptions CommonWithSpecificDiagnosticOptions(ImmutableDictionary<string, ReportDiagnostic> specificDiagnosticOptions);
         protected abstract CompilationOptions CommonWithSpecificDiagnosticOptions(IEnumerable<KeyValuePair<string, ReportDiagnostic>> specificDiagnosticOptions);
@@ -622,6 +636,7 @@ namespace Microsoft.CodeAnalysis
                    object.Equals(this.XmlReferenceResolver, other.XmlReferenceResolver) &&
                    object.Equals(this.SourceReferenceResolver, other.SourceReferenceResolver) &&
                    object.Equals(this.StrongNameProvider, other.StrongNameProvider) &&
+                   object.Equals(this.FileOptionsProvider, other.FileOptionsProvider) &&
                    object.Equals(this.AssemblyIdentityComparer, other.AssemblyIdentityComparer) &&
                    this.PublicSign == other.PublicSign;
 
@@ -656,8 +671,9 @@ namespace Microsoft.CodeAnalysis
                    Hash.Combine(this.XmlReferenceResolver,
                    Hash.Combine(this.SourceReferenceResolver,
                    Hash.Combine(this.StrongNameProvider,
+                   Hash.Combine(this.FileOptionsProvider,
                    Hash.Combine(this.AssemblyIdentityComparer,
-                   Hash.Combine(this.PublicSign, 0))))))))))))))))))))))))));
+                   Hash.Combine(this.PublicSign, 0)))))))))))))))))))))))))));
         }
 
         public static bool operator ==(CompilationOptions left, CompilationOptions right)
