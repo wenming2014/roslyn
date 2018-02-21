@@ -154,7 +154,7 @@ class C
             return
         end if
     end sub
-end class", ignoreTrivia:=False)
+end class")
         End Function
 
         <Fact, Trait(Traits.Feature, Traits.Features.CodeActionsUseIsNullCheck)>
@@ -179,7 +179,22 @@ class C
             return
         end if
     end sub
-end class", ignoreTrivia:=False)
+end class")
+        End Function
+
+        <WorkItem(23581, "https://github.com/dotnet/roslyn/issues/23581")>
+        <Fact, Trait(Traits.Feature, Traits.Features.CodeActionsUseIsNullCheck)>
+        Public Async Function TestValueParameterTypeIsValueConstraintGeneric() As Task
+            Await TestMissingInRegularAndScriptAsync(
+"Imports System
+
+class C
+    sub M(Of T As Structure)(v as T)
+        if ([||]ReferenceEquals(Nothing, v))
+            return
+        end if
+    end sub
+end class")
         End Function
     End Class
 End Namespace

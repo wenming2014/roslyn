@@ -111,8 +111,7 @@ namespace Microsoft.CodeAnalysis.CSharp.SignatureHelp
         {
             if (openBracket.Parent is BracketedArgumentListSyntax)
             {
-                var conditional = expression.Parent as ConditionalAccessExpressionSyntax;
-                if (conditional != null)
+                if (expression.Parent is ConditionalAccessExpressionSyntax conditional)
                 {
                     return TextSpan.FromBounds(conditional.Span.Start, openBracket.FullSpan.End);
                 }
@@ -247,6 +246,19 @@ namespace Microsoft.CodeAnalysis.CSharp.SignatureHelp
         {
             var result = new List<SymbolDisplayPart>();
 
+            if (indexer.ReturnsByRef)
+            {
+                result.Add(Keyword(SyntaxKind.RefKeyword));
+                result.Add(Space());
+            }
+            else if (indexer.ReturnsByRefReadonly)
+            {
+                result.Add(Keyword(SyntaxKind.RefKeyword));
+                result.Add(Space());
+                result.Add(Keyword(SyntaxKind.ReadOnlyKeyword));
+                result.Add(Space());
+            }
+
             result.AddRange(indexer.Type.ToMinimalDisplayParts(semanticModel, position));
             result.Add(Space());
             result.AddRange(indexer.ContainingType.ToMinimalDisplayParts(semanticModel, position));
@@ -302,7 +314,7 @@ namespace Microsoft.CodeAnalysis.CSharp.SignatureHelp
                 }
 
                 identifier = null;
-                openBrace = default(SyntaxToken);
+                openBrace = default;
                 return false;
             }
         }
@@ -342,7 +354,7 @@ namespace Microsoft.CodeAnalysis.CSharp.SignatureHelp
                 }
 
                 identifier = null;
-                openBrace = default(SyntaxToken);
+                openBrace = default;
                 return false;
             }
         }
@@ -383,7 +395,7 @@ namespace Microsoft.CodeAnalysis.CSharp.SignatureHelp
                 }
 
                 identifier = null;
-                openBrace = default(SyntaxToken);
+                openBrace = default;
                 return false;
             }
         }

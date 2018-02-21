@@ -1,4 +1,4 @@
 Overrides Microsoft.CodeAnalysis.VisualBasic.VisualBasicCompilation.GetOptionsForAdditionalText(additionalText As Microsoft.CodeAnalysis.AdditionalText) -> Microsoft.CodeAnalysis.Options.OptionSet
 Overrides Microsoft.CodeAnalysis.VisualBasic.VisualBasicCompilation.GetOptionsForSyntaxTree(tree As Microsoft.CodeAnalysis.SyntaxTree) -> Microsoft.CodeAnalysis.Options.OptionSet
 Microsoft.CodeAnalysis.VisualBasic.VisualBasicCompilationOptions.WithFileOptionsProvider(provider As Microsoft.CodeAnalysis.Options.FileOptionsProvider) -> Microsoft.CodeAnalysis.VisualBasic.VisualBasicCompilationOptions
-Microsoft.CodeAnalysis.VisualBasic.LanguageVersion.VisualBasic15_5 = 1505 -> Microsoft.CodeAnalysis.VisualBasic.LanguageVersion
+Microsoft.CodeAnalysis.VisualBasic.VisualBasicCompilationOptions.WithMetadataImportOptions(value As Microsoft.CodeAnalysis.MetadataImportOptions) -> Microsoft.CodeAnalysis.VisualBasic.VisualBasicCompilationOptions

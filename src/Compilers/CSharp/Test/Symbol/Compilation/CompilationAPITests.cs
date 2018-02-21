@@ -23,6 +23,8 @@ using Roslyn.Test.Utilities;
 using Roslyn.Utilities;
 using Xunit;
 using VB = Microsoft.CodeAnalysis.VisualBasic;
+using KeyValuePair = Roslyn.Utilities.KeyValuePair;
+using System.Security.Cryptography;
 
 namespace Microsoft.CodeAnalysis.CSharp.UnitTests
 {
@@ -42,6 +44,26 @@ namespace Microsoft.CodeAnalysis.CSharp.UnitTests
                 // error CS8102: Public signing was specified and requires a public key, but no public key was specified.
                 Diagnostic(ErrorCode.ERR_PublicSignButNoKey).WithLocation(1, 1)
             );
+        }
+
+        [Fact]
+        [WorkItem(11497, "https://github.com/dotnet/roslyn/issues/11497")]
+        public void PublicSignWithEmptyKeyPath()
+        {
+            CreateStandardCompilation("", options: TestOptions.ReleaseDll.WithPublicSign(true).WithCryptoKeyFile("")).VerifyDiagnostics(
+                // error CS8102: Public signing was specified and requires a public key, but no public key was specified.
+                Diagnostic(ErrorCode.ERR_PublicSignButNoKey).WithLocation(1, 1));
+        }
+
+        [Fact]
+        [WorkItem(11497, "https://github.com/dotnet/roslyn/issues/11497")]
+        public void PublicSignWithEmptyKeyPath2()
+        {
+            CreateStandardCompilation("", options: TestOptions.ReleaseDll.WithPublicSign(true).WithCryptoKeyFile("\"\"")).VerifyDiagnostics(
+                // error CS8106: Option 'CryptoKeyFile' must be an absolute path.
+                Diagnostic(ErrorCode.ERR_OptionMustBeAbsolutePath).WithArguments("CryptoKeyFile").WithLocation(1, 1),
+                // error CS8102: Public signing was specified and requires a public key, but no public key was specified.
+                Diagnostic(ErrorCode.ERR_PublicSignButNoKey).WithLocation(1, 1));
         }
 
         [Fact]
@@ -177,7 +199,8 @@ namespace A.B {
                 debugInformationFormat: (DebugInformationFormat)(-1),
                 outputNameOverride: " ",
                 fileAlignment: 513,
-                subsystemVersion: SubsystemVersion.Create(1000000, -1000000));
+                subsystemVersion: SubsystemVersion.Create(1000000, -1000000),
+                pdbChecksumAlgorithm: new HashAlgorithmName("invalid hash algorithm name"));
 
             EmitResult result = c.Emit(stream, options: options);
 
@@ -189,9 +212,29 @@ namespace A.B {
                 // error CS2024: Invalid file section alignment '513'
                 Diagnostic(ErrorCode.ERR_InvalidFileAlignment).WithArguments("513").WithLocation(1, 1),
                 // error CS1773: Invalid version 1000000.-1000000 for /subsystemversion. The version must be 6.02 or greater for ARM or AppContainerExe, and 4.00 or greater otherwise
-                Diagnostic(ErrorCode.ERR_InvalidSubsystemVersion).WithArguments("1000000.-1000000").WithLocation(1, 1));
+                Diagnostic(ErrorCode.ERR_InvalidSubsystemVersion).WithArguments("1000000.-1000000").WithLocation(1, 1),
+                // error CS8113: Invalid hash algorithm name: 'invalid hash algorithm name'
+                Diagnostic(ErrorCode.ERR_InvalidHashAlgorithmName).WithArguments("invalid hash algorithm name").WithLocation(1, 1));
 
             Assert.False(result.Success);
+        }
+
+        [Fact]
+        public void EmitOptions_PdbChecksumAndDeterminism()
+        {
+            var options = new EmitOptions(pdbChecksumAlgorithm: default(HashAlgorithmName));
+            var diagnosticBag = new DiagnosticBag();
+
+            options.ValidateOptions(diagnosticBag, MessageProvider.Instance, isDeterministic: true);
+
+            diagnosticBag.Verify(
+                // error CS8113: Invalid hash algorithm name: ''
+                Diagnostic(ErrorCode.ERR_InvalidHashAlgorithmName).WithArguments(""));
+
+            diagnosticBag.Clear();
+
+            options.ValidateOptions(diagnosticBag, MessageProvider.Instance, isDeterministic: false);
+            diagnosticBag.Verify();
         }
 
         [Fact]
@@ -212,8 +255,8 @@ namespace A.B {
 
             Assert.Throws<ArgumentException>("embeddedTexts", () => comp.Emit(
                 peStream: new MemoryStream(),
-                pdbStream: new MemoryStream(),
-                options: EmitOptions.Default.WithDebugInformationFormat(DebugInformationFormat.Pdb),
+                pdbStream: null,
+                options: null,
                 embeddedTexts: new[] { EmbeddedText.FromStream("_", new MemoryStream()) }));
 
             Assert.Throws<ArgumentException>("embeddedTexts", () => comp.Emit(

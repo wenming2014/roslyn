@@ -967,7 +967,9 @@ namespace Sample.Extensions
 </Workspace>";
 
             var expectedText =
-@"using Sample.Extensions;
+@"
+using Sample.Extensions;
+
 namespace Sample
 {
     class Program
@@ -978,7 +980,8 @@ namespace Sample
             var other = myString?.StringExtension().Substring(0);
         }
     }
-}";
+}
+       ";
             await TestInRegularAndScriptAsync(initialText, expectedText);
         }
 
@@ -1014,14 +1017,17 @@ namespace Sample.Extensions
 </Workspace>";
 
             var expectedText =
-@"using Sample.Extensions;
+@"
+using Sample.Extensions;
+
 public class C
 {
     public T F<T>(T x)
     {
         return F(new C())?.F(new C())?.Extn();
     }
-}";
+}
+       ";
             await TestInRegularAndScriptAsync(initialText, expectedText);
         }
 
@@ -1057,14 +1063,17 @@ namespace Sample.Extensions
 </Workspace>";
 
             var expectedText =
-@"using Sample.Extensions;
+@"
+using Sample.Extensions;
+
 public class C
 {
     public T F<T>(T x)
     {
         return F(new C())?.F(new C()).Extn()?.F(newC());
     }
-}";
+}
+       ";
             await TestInRegularAndScriptAsync(initialText, expectedText);
         }
 
@@ -1107,6 +1116,69 @@ namespace N
     }
 }",
 parseOptions: null);
+        }
+
+        [WorkItem(16547, "https://github.com/dotnet/roslyn/issues/16547")]
+        [Fact, Trait(Traits.Feature, Traits.Features.CodeActionsAddImport)]
+        public async Task TestAddUsingForAddExtentionMethodWithSameNameAsProperty()
+        {
+            await TestAsync(
+@"
+namespace A
+{
+    public class Foo
+    {
+        public void Bar()
+        {
+            var self = this.[|Self()|];
+        }
+
+        public Foo Self
+        {
+            get { return this; }
+        }
+    }
+}
+
+namespace A.Extensions
+{
+    public static class FooExtensions
+    {
+        public static Foo Self(this Foo foo)
+        {
+            return foo;
+        }
+    }
+}",
+@"
+using A.Extensions;
+
+namespace A
+{
+    public class Foo
+    {
+        public void Bar()
+        {
+            var self = this.Self();
+        }
+
+        public Foo Self
+        {
+            get { return this; }
+        }
+    }
+}
+
+namespace A.Extensions
+{
+    public static class FooExtensions
+    {
+        public static Foo Self(this Foo foo)
+        {
+            return foo;
+        }
+    }
+}");
         }
     }
 }

@@ -305,6 +305,32 @@ class Class
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.CodeActionsGenerateVariable)]
+        public async Task TestGeneratePropertyInIn()
+        {
+            await TestInRegularAndScriptAsync(
+@"
+using System;
+class Class
+{
+    void Method(in int i)
+    {
+        Method(in this.[|goo|]);
+    }
+}",
+@"
+using System;
+class Class
+{
+    public ref readonly int goo => throw new NotImplementedException();
+
+    void Method(in int i)
+    {
+        Method(in this.goo);
+    }
+}", index: 2);
+        }
+
+        [Fact, Trait(Traits.Feature, Traits.Features.CodeActionsGenerateVariable)]
         public async Task TestInRef1()
         {
             await TestInRegularAndScriptAsync(
@@ -1782,8 +1808,7 @@ class Program
     {
         Goo#();
     }
-}",
-ignoreTrivia: false);
+}");
         }
 
         [WorkItem(539536, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/539536")]
@@ -1843,8 +1868,7 @@ class D
         C.P = 10;
     }
 }
-",
-ignoreTrivia: false);
+");
         }
 
         [WorkItem(539793, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/539793")]
@@ -2309,8 +2333,7 @@ static class MyExtension
     {
         P = 10;
     }
-}",
-ignoreTrivia: false);
+}");
         }
 
         [WorkItem(539675, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/539675")]
@@ -2336,8 +2359,7 @@ ignoreTrivia: false);
         P = 10;
     }
 }",
-index: 1,
-ignoreTrivia: false);
+index: 1);
         }
 
         [WorkItem(543813, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/543813")]
@@ -2361,8 +2383,7 @@ ignoreTrivia: false);
         P = 10;
     }
 }",
-index: 1,
-ignoreTrivia: false);
+index: 1);
         }
 
         [WorkItem(543813, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/543813")]
@@ -2386,8 +2407,7 @@ ignoreTrivia: false);
         P = 10;
     }
 }",
-index: 0,
-ignoreTrivia: false);
+index: 0);
         }
 
         [WorkItem(543813, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/543813")]
@@ -2416,8 +2436,7 @@ ignoreTrivia: false);
         A = 9;
     }
 }",
-index: 1,
-ignoreTrivia: false);
+index: 1);
         }
 
         [WorkItem(543813, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/543813")]
@@ -2446,8 +2465,7 @@ ignoreTrivia: false);
         A = 9;
     }
 }",
-index: 0,
-ignoreTrivia: false);
+index: 0);
         }
 
         [WorkItem(539665, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/539665")]
@@ -2473,8 +2491,7 @@ class D
     {
         C.P = 10;
     }
-}",
-ignoreTrivia: false);
+}");
         }
 
         [WorkItem(540595, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/540595")]
@@ -2486,8 +2503,7 @@ ignoreTrivia: false);
 @"object Goo { get; private set; }
 
 Goo",
-parseOptions: Options.Script,
-ignoreTrivia: false);
+parseOptions: Options.Script);
         }
 
         [WorkItem(542535, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/542535")]
@@ -2508,14 +2524,12 @@ count: 1);
             await TestInRegularAndScriptAsync(
 Initial,
 @"class C
-{
-    const int y = 1;
+{   
+    const int y = 1 ;
     private const bool undeclared;
 
-    public void Goo(bool x = undeclared)
-    {
-    }
-}");
+    public void Goo ( bool x = undeclared ) { }
+} ");
         }
 
         [WorkItem(542900, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/542900")]
@@ -3815,6 +3829,7 @@ index: 1);
 #if true
         // Banner Line 1
         // Banner Line 2
+
         int local;
         int.TryParse(""123"", out [|local|]);
 #endif
@@ -3850,8 +3865,7 @@ class Program
     }
 
     public static object X { get; private set; }
-}",
-ignoreTrivia: false);
+}");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.CodeActionsGenerateVariable)]
@@ -3905,8 +3919,7 @@ class Program
     }
 #line hidden
 }
-#line default",
-ignoreTrivia: false);
+#line default");
         }
 
         [WorkItem(545217, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/545217")]
@@ -4346,7 +4359,8 @@ class C
             await TestExactActionSetOfferedAsync(code, new[] { string.Format(FeaturesResources.Generate_local_0, "Bar") });
 
             await TestInRegularAndScriptAsync(code,
-@"class C
+@"
+class C
 {
 #line 1 ""goo""
     void Goo()
@@ -4355,7 +4369,8 @@ class C
     }
 #line default
 #line hidden
-}", options: ImplicitTypingEverywhere());
+}
+", options: ImplicitTypingEverywhere());
         }
 
         [WorkItem(546027, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/546027")]
@@ -4430,8 +4445,7 @@ namespace CSharpDemoApp
     }
 }
 ",
-index: 3,
-ignoreTrivia: false);
+index: 3);
         }
 
         [WorkItem(863346, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/863346")]
@@ -4472,8 +4486,7 @@ class TestClass<T1>
     }
 }
 ",
-index: 3,
-ignoreTrivia: false);
+index: 3);
         }
 
         [WorkItem(863346, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/863346")]
@@ -4514,8 +4527,7 @@ class TestClass<T1>
         return function(zoo);
     }
 }
-",
-ignoreTrivia: false);
+");
         }
 
         [WorkItem(865067, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/865067")]
@@ -6778,7 +6790,8 @@ class Program
 {
     static void Main(string[] args)
     {
-        Func<int> goo = () => {
+        Func<int> goo = () =>
+        {
             return 0;
         };
     }
@@ -7140,7 +7153,8 @@ public class Goo
         [|String|] = goo;
     }
 }",
-@"using System;
+@"
+using System;
 
 public class Goo
 {
@@ -7168,7 +7182,8 @@ public class Goo
         [|String|] = goo;
     }
 }",
-@"using System;
+@"
+using System;
 
 public class Goo
 {
@@ -7436,7 +7451,6 @@ class C
 {
     public bool isDisposed;
     private int y;
-
     public readonly int x;
     public readonly int m;
 
@@ -7470,7 +7484,6 @@ class C
     public readonly int x;
     public readonly int m;
     private readonly int y;
-
     public bool isDisposed;
 
     public C()

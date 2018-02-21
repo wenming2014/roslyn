@@ -112,6 +112,11 @@ namespace Microsoft.CodeAnalysis.CSharp
                 /// </summary>
                 public readonly MethodSymbol OriginalMethodSymbol;
 
+                /// <summary>
+                /// Syntax for the block of the nested function.
+                /// </summary>
+                public readonly SyntaxReference BlockSyntax;
+
                 public readonly PooledHashSet<Symbol> CapturedVariables = PooledHashSet<Symbol>.GetInstance();
 
                 public readonly ArrayBuilder<ClosureEnvironment> CapturedEnvironments
@@ -119,10 +124,30 @@ namespace Microsoft.CodeAnalysis.CSharp
 
                 public ClosureEnvironment ContainingEnvironmentOpt;
 
-                public Closure(MethodSymbol symbol)
+                private bool _capturesThis;
+
+                /// <summary>
+                /// True if this closure directly or transitively captures 'this' (captures
+                /// a local function which directly or indirectly captures 'this').
+                /// Calculated in <see cref="MakeAndAssignEnvironments"/>.
+                /// </summary>
+                public bool CapturesThis
+                {
+                    get => _capturesThis;
+                    set
+                    {
+                        Debug.Assert(value);
+                        _capturesThis = value;
+                    }
+                }
+
+                public SynthesizedClosureMethod SynthesizedLoweredMethod;
+
+                public Closure(MethodSymbol symbol, SyntaxReference blockSyntax)
                 {
                     Debug.Assert(symbol != null);
                     OriginalMethodSymbol = symbol;
+                    BlockSyntax = blockSyntax;
                 }
 
                 public void Free()
@@ -132,81 +157,28 @@ namespace Microsoft.CodeAnalysis.CSharp
                 }
             }
 
-            /// <summary>
-            /// Optimizes local functions such that if a local function only references other local functions
-            /// that capture no variables, we don't need to create capture environments for any of them.
-            /// </summary>
-            private void RemoveUnneededReferences(ParameterSymbol thisParam)
+            public sealed class ClosureEnvironment
             {
-                var methodGraph = new MultiDictionary<MethodSymbol, MethodSymbol>();
-                var capturesThis = new HashSet<MethodSymbol>();
-                var capturesVariable = new HashSet<MethodSymbol>();
-                var visitStack = new Stack<MethodSymbol>();
-                VisitClosures(ScopeTree, (scope, closure) =>
+                public readonly SetWithInsertionOrder<Symbol> CapturedVariables;
+                
+                /// <summary>
+                /// True if this environment captures a reference to a class environment
+                /// declared in a higher scope. Assigned by
+                /// <see cref="ComputeLambdaScopesAndFrameCaptures(ParameterSymbol)"/>
+                /// </summary>
+                public bool CapturesParent;
+
+                public readonly bool IsStruct;
+                internal SynthesizedClosureEnvironment SynthesizedEnvironment;
+
+                public ClosureEnvironment(IEnumerable<Symbol> capturedVariables, bool isStruct)
                 {
-                    foreach (var capture in closure.CapturedVariables)
+                    CapturedVariables = new SetWithInsertionOrder<Symbol>();
+                    foreach (var item in capturedVariables)
                     {
-                        if (capture is MethodSymbol localFunc)
-                        {
-                            methodGraph.Add(localFunc, closure.OriginalMethodSymbol);
-                        }
-                        else if (capture == thisParam)
-                        {
-                            if (capturesThis.Add(closure.OriginalMethodSymbol))
-                            {
-                                visitStack.Push(closure.OriginalMethodSymbol);
-                            }
-                        }
-                        else if (capturesVariable.Add(closure.OriginalMethodSymbol) &&
-                                 !capturesThis.Contains(closure.OriginalMethodSymbol))
-                        {
-                            visitStack.Push(closure.OriginalMethodSymbol);
-                        }
+                        CapturedVariables.Add(item);
                     }
-                });
-
-                while (visitStack.Count > 0)
-                {
-                    var current = visitStack.Pop();
-                    var setToAddTo = capturesVariable.Contains(current) ? capturesVariable : capturesThis;
-                    foreach (var capturesCurrent in methodGraph[current])
-                    {
-                        if (setToAddTo.Add(capturesCurrent))
-                        {
-                            visitStack.Push(capturesCurrent);
-                        }
-                    }
-                }
-
-                // True if there are any closures in the tree which
-                // capture 'this' and another variable
-                bool captureMoreThanThis = false;
-
-                VisitClosures(ScopeTree, (scope, closure) =>
-                {
-                    if (!capturesVariable.Contains(closure.OriginalMethodSymbol))
-                    {
-                        closure.CapturedVariables.Clear();
-                    }
-
-                    if (capturesThis.Contains(closure.OriginalMethodSymbol))
-                    {
-                        closure.CapturedVariables.Add(thisParam);
-                        if (closure.CapturedVariables.Count > 1)
-                        {
-                            captureMoreThanThis |= true;
-                        }
-                    }
-                });
-
-                if (!captureMoreThanThis && capturesThis.Count > 0)
-                {
-                    // If we have closures which capture 'this', and nothing else, we can
-                    // remove 'this' from the declared variables list, since we don't need
-                    // to create an environment to hold 'this' (since we can emit the
-                    // lowered methods directly onto the containing class)
-                    bool removed = ScopeTree.DeclaredVariables.Remove(thisParam);
-                    Debug.Assert(removed);
+                    IsStruct = isStruct;
                 }
             }
 
@@ -224,6 +196,31 @@ namespace Microsoft.CodeAnalysis.CSharp
                 {
                     VisitClosures(nested, action);
                 }
+            }
+
+            /// <summary>
+            /// Visit all the closures and return true when the <paramref name="func"/> returns
+            /// true. Otherwise, returns false.
+            /// </summary>
+            public static bool CheckClosures(Scope scope, Func<Scope, Closure, bool> func)
+            {
+                foreach (var closure in scope.Closures)
+                {
+                    if (func(scope, closure))
+                    {
+                        return true;
+                    }
+                }
+
+                foreach (var nested in scope.NestedScopes)
+                {
+                    if (CheckClosures(nested, func))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
 
             /// <summary>
@@ -261,6 +258,21 @@ namespace Microsoft.CodeAnalysis.CSharp
                 /// of a captured variable is to determine the lifetime of its capture environment.
                 /// </summary>
                 private readonly SmallDictionary<Symbol, Scope> _localToScope = new SmallDictionary<Symbol, Scope>();
+
+#if DEBUG
+                /// <summary>
+                /// Free variables are variables declared in expression statements that can then
+                /// be captured in nested lambdas. Normally, captured variables must lowered as
+                /// part of closure conversion, but expression tree variables are handled separately
+                /// by the expression tree rewriter and are considered free for the purposes of
+                /// closure conversion. For instance, an expression with a nested lambda, e.g.
+                ///     x => y => x + y
+                /// contains an expression variable, x, that should not be treated as a captured
+                /// variable to be replaced by closure conversion. Instead, it should be left for
+                /// expression tree conversion.
+                /// </summary>
+                private readonly HashSet<Symbol> _freeVariables = new HashSet<Symbol>();
+#endif
 
                 private readonly MethodSymbol _topLevelMethod;
 
@@ -445,7 +457,7 @@ namespace Microsoft.CodeAnalysis.CSharp
 
                     // Closure is declared (lives) in the parent scope, but its
                     // variables are in a nested scope
-                    var closure = new Closure(closureSymbol);
+                    var closure = new Closure(closureSymbol, body.Syntax.GetReference());
                     _currentScope.Closures.Add(closure);
 
                     var oldClosure = _currentClosure;
@@ -454,18 +466,14 @@ namespace Microsoft.CodeAnalysis.CSharp
                     var oldScope = _currentScope;
                     _currentScope = CreateNestedScope(body, _currentScope, _currentClosure);
 
-                    BoundNode result;
-                    if (!_inExpressionTree)
-                    {
-                        // For the purposes of scoping, parameters live in the same scope as the
-                        // closure block
-                        DeclareLocals(_currentScope, closureSymbol.Parameters);
-                        result = VisitBlock(body);
-                    }
-                    else
-                    {
-                        result = base.VisitBlock(body);
-                    }
+                    // For the purposes of scoping, parameters live in the same scope as the
+                    // closure block. Expression tree variables are free variables for the
+                    // purposes of closure conversion
+                    DeclareLocals(_currentScope, closureSymbol.Parameters, _inExpressionTree);
+
+                    var result = _inExpressionTree
+                        ? base.VisitBlock(body)
+                        : VisitBlock(body);
 
                     _currentScope = oldScope;
                     _currentClosure = oldClosure;
@@ -488,6 +496,13 @@ namespace Microsoft.CodeAnalysis.CSharp
                     if (symbol is LocalSymbol local && local.IsConst)
                     {
                         // consts aren't captured since they're inlined
+                        return;
+                    }
+
+                    if (symbol is MethodSymbol method &&
+                        _currentClosure.OriginalMethodSymbol == method)
+                    {
+                        // Is this recursion? If so there's no capturing
                         return;
                     }
 
@@ -526,9 +541,11 @@ namespace Microsoft.CodeAnalysis.CSharp
                         }
                         else
                         {
+#if DEBUG
                             // Parameters and locals from expression tree lambdas
-                            // don't get recorded
-                            Debug.Assert(_inExpressionTree);
+                            // are free variables
+                            Debug.Assert(_freeVariables.Contains(symbol));
+#endif
                         }
                     }
                 }
@@ -595,13 +612,22 @@ namespace Microsoft.CodeAnalysis.CSharp
                     return newScope;
                 }
 
-                private void DeclareLocals<TSymbol>(Scope scope, ImmutableArray<TSymbol> locals)
+                private void DeclareLocals<TSymbol>(Scope scope, ImmutableArray<TSymbol> locals, bool declareAsFree = false)
                     where TSymbol : Symbol
                 {
                     foreach (var local in locals)
                     {
                         Debug.Assert(!_localToScope.ContainsKey(local));
-                        _localToScope[local] = scope;
+                        if (declareAsFree)
+                        {
+#if DEBUG
+                            Debug.Assert(_freeVariables.Add(local));
+#endif
+                        }
+                        else
+                        {
+                            _localToScope.Add(local, scope);
+                        }
                     }
                 }
             }

@@ -7,8 +7,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
-using Microsoft.CodeAnalysis.Collections;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.PooledObjects;
 using Microsoft.CodeAnalysis.Text;
@@ -19,12 +19,12 @@ namespace Microsoft.CodeAnalysis.CSharp
     public class CSharpCommandLineParser : CommandLineParser
     {
         public static CSharpCommandLineParser Default { get; } = new CSharpCommandLineParser();
+        public static CSharpCommandLineParser Script { get; } = new CSharpCommandLineParser(isScriptCommandLineParser: true);
 
-        internal static CSharpCommandLineParser ScriptRunner { get; } = new CSharpCommandLineParser(isScriptRunner: true);
         private readonly static char[] s_quoteOrEquals = new[] { '"', '=' };
 
-        internal CSharpCommandLineParser(bool isScriptRunner = false)
-            : base(CSharp.MessageProvider.Instance, isScriptRunner)
+        internal CSharpCommandLineParser(bool isScriptCommandLineParser = false)
+            : base(CSharp.MessageProvider.Instance, isScriptCommandLineParser)
         {
         }
 
@@ -48,8 +48,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         {
             List<Diagnostic> diagnostics = new List<Diagnostic>();
             List<string> flattenedArgs = new List<string>();
-            List<string> scriptArgs = IsScriptRunner ? new List<string>() : null;
-            List<string> responsePaths = IsScriptRunner ? new List<string>() : null;
+            List<string> scriptArgs = IsScriptCommandLineParser ? new List<string>() : null;
+            List<string> responsePaths = IsScriptCommandLineParser ? new List<string>() : null;
             FlattenArgs(args, diagnostics, flattenedArgs, scriptArgs, baseDirectory, responsePaths);
 
             string appConfigPath = null;
@@ -66,7 +66,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             DebugInformationFormat debugInformationFormat = PathUtilities.IsUnixLikePlatform ? DebugInformationFormat.PortablePdb : DebugInformationFormat.Pdb;
             bool debugPlus = false;
             string pdbPath = null;
-            bool noStdLib = IsScriptRunner; // don't add mscorlib from sdk dir when running scripts
+            bool noStdLib = IsScriptCommandLineParser; // don't add mscorlib from sdk dir when running scripts
             string outputDirectory = baseDirectory;
             ImmutableArray<KeyValuePair<string, string>> pathMap = ImmutableArray<KeyValuePair<string, string>>.Empty;
             string outputFileName = null;
@@ -131,7 +131,7 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             // Process ruleset files first so that diagnostic severity settings specified on the command line via
             // /nowarn and /warnaserror can override diagnostic severity settings specified in the ruleset file.
-            if (!IsScriptRunner)
+            if (!IsScriptCommandLineParser)
             {
                 foreach (string arg in flattenedArgs)
                 {
@@ -209,7 +209,7 @@ namespace Microsoft.CodeAnalysis.CSharp
 #endif
                 }
 
-                if (IsScriptRunner)
+                if (IsScriptCommandLineParser)
                 {
                     switch (name)
                     {
@@ -1039,10 +1039,14 @@ namespace Microsoft.CodeAnalysis.CSharp
                         case "pathmap":
                             // "/pathmap:K1=V1,K2=V2..."
                             {
-                                if (value == null)
-                                    break;
+                                unquoted = RemoveQuotesAndSlashes(value);
 
-                                pathMap = pathMap.Concat(ParsePathMap(value, diagnostics));
+                                if (unquoted == null)
+                                {
+                                    break;
+                                }
+
+                                pathMap = pathMap.Concat(ParsePathMap(unquoted, diagnostics));
                             }
                             continue;
 
@@ -1202,7 +1206,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 AddDiagnostic(diagnostics, diagnosticOptions, ErrorCode.ERR_NoNetModuleOutputWhenRefOutOrRefOnly);
             }
 
-            if (!IsScriptRunner && !sourceFilesSpecified && (outputKind.IsNetModule() || !resourcesOrModulesSpecified))
+            if (!IsScriptCommandLineParser && !sourceFilesSpecified && (outputKind.IsNetModule() || !resourcesOrModulesSpecified))
             {
                 AddDiagnostic(diagnostics, diagnosticOptions, ErrorCode.WRN_NoSources);
             }
@@ -1255,14 +1259,9 @@ namespace Microsoft.CodeAnalysis.CSharp
                 embeddedFiles.AddRange(sourceFiles);
             }
 
-            if (embeddedFiles.Count > 0)
+            if (embeddedFiles.Count > 0 && !emitPdb)
             {
-                // Restricted to portable PDBs for now, but the IsPortable condition should be removed
-                // and the error message adjusted accordingly when native PDB support is added.
-                if (!emitPdb || !debugInformationFormat.IsPortable())
-                {
-                    AddDiagnostic(diagnostics, ErrorCode.ERR_CannotEmbedWithoutPdb);
-                }
+                AddDiagnostic(diagnostics, ErrorCode.ERR_CannotEmbedWithoutPdb);
             }
 
             var parsedFeatures = ParseFeatures(features);
@@ -1275,7 +1274,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 languageVersion: languageVersion,
                 preprocessorSymbols: defines.ToImmutableAndFree(),
                 documentationMode: parseDocumentationComments ? DocumentationMode.Diagnose : DocumentationMode.None,
-                kind: IsScriptRunner ? SourceCodeKind.Script : SourceCodeKind.Regular,
+                kind: IsScriptCommandLineParser ? SourceCodeKind.Script : SourceCodeKind.Regular,
                 features: parsedFeatures
             );
 
@@ -1323,7 +1322,9 @@ namespace Microsoft.CodeAnalysis.CSharp
                 fileAlignment: fileAlignment,
                 subsystemVersion: subsystemVersion,
                 runtimeMetadataVersion: runtimeMetadataVersion,
-                instrumentationKinds: instrumentationKinds.ToImmutableAndFree()
+                instrumentationKinds: instrumentationKinds.ToImmutableAndFree(),
+                // TODO: set from /checksumalgorithm (see https://github.com/dotnet/roslyn/issues/24735)
+                pdbChecksumAlgorithm: HashAlgorithmName.SHA256
             );
 
             // add option incompatibility errors if any
@@ -1332,8 +1333,8 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             return new CSharpCommandLineArguments
             {
-                IsScriptRunner = IsScriptRunner,
-                InteractiveMode = interactiveMode || IsScriptRunner && sourceFiles.Count == 0,
+                IsScriptRunner = IsScriptCommandLineParser,
+                InteractiveMode = interactiveMode || IsScriptCommandLineParser && sourceFiles.Count == 0,
                 BaseDirectory = baseDirectory,
                 PathMap = pathMap,
                 Errors = diagnostics.AsImmutable(),
@@ -1447,7 +1448,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 // names from the files containing their entrypoints and libraries derive their names from 
                 // their first input files.
 
-                if (!IsScriptRunner && !sourceFilesSpecified)
+                if (!IsScriptCommandLineParser && !sourceFilesSpecified)
                 {
                     AddDiagnostic(diagnostics, ErrorCode.ERR_OutputNeedsName);
                     simpleName = null;
@@ -1481,7 +1482,7 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             if (outputKind.IsNetModule())
             {
-                Debug.Assert(!IsScriptRunner);
+                Debug.Assert(!IsScriptCommandLineParser);
 
                 compilationName = moduleAssemblyName;
             }
@@ -1523,7 +1524,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // with references relative to csi.exe (e.g. System.ValueTuple.dll).
             if (responsePathsOpt != null)
             {
-                Debug.Assert(IsScriptRunner);
+                Debug.Assert(IsScriptCommandLineParser);
                 builder.AddRange(responsePathsOpt);
             }
 
