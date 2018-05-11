@@ -1,5 +1,4 @@
-Enhanced 'using' constructs
-============================
+# Enhanced 'using' constructs
 
 This document is meant to detail potential changes to C# post-7.3 to provide
 extensions for two uses of the 'using' statement: pattern-based 'using' and
@@ -111,3 +110,73 @@ called "Dispose", which we will consider a [WellKnownMemberName](http://source.r
 
 Lookup is designed to handle most of the language complexity itself, so that
 should be just about everything required for the language feature.
+
+### `using var`
+
+#### Design
+
+The next feature is `using var`. The simple, intuitive description of the feature is that
+variables which are declared with the `using` keyword before the type are automatically
+disposed when those variables go out of scope.
+
+Unpacking that description, there are several implications. The first is that using variables
+must be valid variable declarations, so this would be an augmentation of the 
+`LocalDeclarationStatementSyntax`. Next, using variables must have types that conform to the
+requirements of the using statement, right now meaning that they have an implicit conversion
+to IDisposable. It then seems reasonable to also implement the same restrictions that using
+variables in using statements have, namely that they are read-only and cannot be modified
+after declaration or be passed by-ref except by readonly ref.
+
+Lastly, we have to consider what the effective scope of "disposal at end of scope" means. 
+Using statements have braces to clearly delineate their scope. In many cases, C# provides
+similar enclosing deliminations as part of blocks. Since using variables can only appear in
+statements and statements usually must appear in blocks, this seems like a reasonable first
+step. The behavior would be as follows: at the point a using variable is declared and assigned,
+it will immediately be followed by a try-finally, where the remainder of the method will be nested
+inside the `try` and the `finally` will consist of a null check and disposal of the `using` variable.
+
+There is one small complication to the previous design: `switch` statements. `switch` statements
+allow variable declarations and statements that are not nested within a single block. In addition,
+variable scope breaks down in these cases because the scope of some variables in switch statements
+are not equivalent to the *lifetime* of those variables. Fortunately, we don't have to get into
+the details here because we are only concerned with variables declared as a part of statements,
+which do not have differing lifetime and scope. Still, since the scopes overlap, it's not clear
+where the start of a using variable begins and where its lexical scope ends.
+
+TODO: Plan for switch statement
+
+#### Implementation
+
+The first step that needs to be taken is to add support for using variables to the 
+`LocalDeclarationStatementSyntax`. This can be done by modifying Syntax.xml to contain a new
+token for the `using` keyword, and augmenting the parser in `LanguageParser.cs` to recognize
+and include the `using` keyword if present in that location.
+
+After parsing, binding needs to be changed to recognize whether a given local variable is
+a normal variable or a `using` variable. This change has two pieces: a change to `LocalSymbol`
+to include a property indicating that this local is a using-var. Here's where terminology breaks 
+down. We already have a notion of a using variable -- it's the variable inside a using statement.
+We need some other flag to indicate that the variable is a using variable declared in a regular
+`LocalDeclarationStatement`. Perhaps `IsLocalUsingVariable`? The binder in 
+`BindLocalDeclarationStatement` will also have to be changed to pass the appropriate arguments
+when constructing the `LocalSymbol`.
+
+The tricky part will actually be constructing the try-finally's for each variable. There are
+multiple reasonable appraoches. One solution to this would be add a new rewriter pass to
+the "lowering" phase of the compiler. Normally this would be the kind of operation we would
+perform inside the `LocalRewriter`, but unfortunately this change introduces new blocks, which
+is not a great fit for the `LocalRewriter`.
+
+The new pass would perform the following operations:
+
+1. Override `VisitStatementList` to check if any statements are `ExpressionStatement`s. 
+2. If so, check if the expression is a `BoundAssignmentExpression`. 
+3. If so, check if the left-hand side is a "local using variable". 
+4. If so, introduce a new `BoundUsingStatement` with a corresponding `BoundBlock`. Put all
+   subsequent statements in the current statement list inside the synthesized bound block.
+   Make the "using variable" the target of the using statement.
+
+TODO: Handle switch statement.
+
+By using this new pass to reduce using variables to regular using statements, we should
+be able to rely on subsequent passes to compile the rest of the code correctly.
