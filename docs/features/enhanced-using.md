@@ -111,6 +111,20 @@ called "Dispose", which we will consider a [WellKnownMemberName](http://source.r
 Lookup is designed to handle most of the language complexity itself, so that
 should be just about everything required for the language feature.
 
+
+*Worklist*
+
+1. Add a definition for a Dispose method to WellKnownMemberNames.cs.
+2. Modify BindUsingStatementParts to do a LookupMembersInType for the method name
+   added to WellKnownMemberNames.cs.
+3. Check if the lookup has at least one result
+4. If there is a method that takes no parameters or type parameters, accept it.
+   Otherwise, produce a warning that Dispose methods exist, but they have the
+   wrong signature.
+5. If (4) was a success, produce a new BoundUsingStatement found with the target
+   method. If not, fallback to the old code to try and find an IDisposable
+   conversion.
+
 ### `using var`
 
 #### Design
