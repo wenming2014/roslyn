@@ -22,7 +22,7 @@ namespace CompilerBenchmarks
                 Add(DefaultConfig.Instance.GetExporters().ToArray());
                 Add(DefaultConfig.Instance.GetColumnProviders().ToArray());
                 Add(MemoryDiagnoser.Default);
-                Add(Job.Core);
+                Add(Job.Core.WithGcServer(true).WithGcConcurrent(true));
             }
         }
 
