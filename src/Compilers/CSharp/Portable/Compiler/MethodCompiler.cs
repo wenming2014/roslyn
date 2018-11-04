@@ -47,7 +47,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         //
         // Stack is used so that the wait would observe the most recently added task and have 
         // more chances to do inlined execution.
-        private ConcurrentStack<Task> _compilerTasks;
+        //private ConcurrentStack<Task> _compilerTasks;
 
         // This field tracks whether any bound method body had hasErrors set or whether any constant field had a bad value.
         // We track it so that we can abort emission in the event that an error occurs without a corresponding diagnostic
@@ -136,12 +136,14 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             if (compilation.Options.ConcurrentBuild)
             {
-                methodCompiler._compilerTasks = new ConcurrentStack<Task>();
+                //methodCompiler._compilerTasks = new ConcurrentStack<Task>();
             }
 
             // directly traverse global namespace (no point to defer this to async)
             methodCompiler.CompileNamespace(compilation.SourceModule.GlobalNamespace);
-            methodCompiler.WaitForWorkers();
+
+            Parallel.ForEach(methodCompiler._namedTypes, (type) => methodCompiler.CompileNamedType(type));
+            methodCompiler._namedTypes.Clear();
 
             // compile additional and anonymous types if any
             if (moduleBeingBuiltOpt != null)
@@ -154,7 +156,7 @@ namespace Microsoft.CodeAnalysis.CSharp
 
                 // By this time we have processed all types reachable from module's global namespace
                 compilation.AnonymousTypeManager.AssignTemplatesNamesAndCompile(methodCompiler, moduleBeingBuiltOpt, diagnostics);
-                methodCompiler.WaitForWorkers();
+                Parallel.ForEach(methodCompiler._namedTypes, (type) => methodCompiler.CompileNamedType(type));
 
                 var privateImplClass = moduleBeingBuiltOpt.PrivateImplClass;
                 if (privateImplClass != null)
@@ -165,6 +167,8 @@ namespace Microsoft.CodeAnalysis.CSharp
                     methodCompiler.CompileSynthesizedMethods(privateImplClass, diagnostics);
                 }
             }
+
+            methodCompiler._namedTypes.Free();
 
             // If we are trying to emit and there's an error without a corresponding diagnostic (e.g. because
             // we depend on an invalid type or constant from another module), then explicitly add a diagnostic.
@@ -289,26 +293,13 @@ namespace Microsoft.CodeAnalysis.CSharp
             return entryPoint;
         }
 
-        private void WaitForWorkers()
-        {
-            var tasks = _compilerTasks;
-            if (tasks == null)
-            {
-                return;
-            }
-
-            Task curTask;
-            while (tasks.TryPop(out curTask))
-            {
-                curTask.GetAwaiter().GetResult();
-            }
-        }
-
         private static void WarnUnusedFields(CSharpCompilation compilation, DiagnosticBag diagnostics, CancellationToken cancellationToken)
         {
             SourceAssemblySymbol assembly = (SourceAssemblySymbol)compilation.Assembly;
             diagnostics.AddRange(assembly.GetUnusedFieldWarnings(cancellationToken));
         }
+
+        public ArrayBuilder<NamedTypeSymbol> _namedTypes = ArrayBuilder<NamedTypeSymbol>.GetInstance();
 
         public override object VisitNamespace(NamespaceSymbol symbol, TypeCompilationState arg)
         {
@@ -319,33 +310,9 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             arg = null; // do not use compilation state of outer type.
             _cancellationToken.ThrowIfCancellationRequested();
-
-            if (_compilation.Options.ConcurrentBuild)
-            {
-                Task worker = CompileNamespaceAsTask(symbol);
-                _compilerTasks.Push(worker);
-            }
-            else
-            {
-                CompileNamespace(symbol);
-            }
+            CompileNamespace(symbol);
 
             return null;
-        }
-
-        private Task CompileNamespaceAsTask(NamespaceSymbol symbol)
-        {
-            return Task.Run(UICultureUtilities.WithCurrentUICulture(() =>
-                {
-                    try
-                    {
-                        CompileNamespace(symbol);
-                    }
-                    catch (Exception e) when (FatalError.ReportUnlessCanceled(e))
-                    {
-                        throw ExceptionUtilities.Unreachable;
-                    }
-                }), _cancellationToken);
         }
 
         private void CompileNamespace(NamespaceSymbol symbol)
@@ -365,33 +332,9 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             arg = null; // do not use compilation state of outer type.
             _cancellationToken.ThrowIfCancellationRequested();
-
-            if (_compilation.Options.ConcurrentBuild)
-            {
-                Task worker = CompileNamedTypeAsTask(symbol);
-                _compilerTasks.Push(worker);
-            }
-            else
-            {
-                CompileNamedType(symbol);
-            }
+            _namedTypes.Add(symbol);
 
             return null;
-        }
-
-        private Task CompileNamedTypeAsTask(NamedTypeSymbol symbol)
-        {
-            return Task.Run(UICultureUtilities.WithCurrentUICulture(() =>
-                {
-                    try
-                    {
-                        CompileNamedType(symbol);
-                    }
-                    catch (Exception e) when (FatalError.ReportUnlessCanceled(e))
-                    {
-                        throw ExceptionUtilities.Unreachable;
-                    }
-                }), _cancellationToken);
         }
 
         private void CompileNamedType(NamedTypeSymbol containingType)
@@ -457,7 +400,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 switch (member.Kind)
                 {
                     case SymbolKind.NamedType:
-                        member.Accept(this, compilationState);
+                        CompileNamedType((NamedTypeSymbol)member);
                         break;
 
                     case SymbolKind.Method:
