@@ -7,6 +7,7 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <IsShipping>false</IsShipping>
     <PlatformTarget>AnyCpu</PlatformTarget>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,7 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="$(BenchmarkDotNetVersion)" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.11.1" />
+    <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.11.1" />
   </ItemGroup>
 
   <ItemGroup>
