@@ -122,6 +122,23 @@ namespace Microsoft.CodeAnalysis.CSharp.UnitTests
         /// <summary>
         /// Parses given string and initializes a depth-first preorder enumerator.
         /// </summary>
+        protected SyntaxTree UsingTree(string text, params DiagnosticDescription[] expectedErrors)
+        {
+            var tree = SyntaxFactory.ParseSyntaxTree(text);
+            tree.GetDiagnostics().Verify(expectedErrors);
+            Assert.Equal(text, tree.ToString());
+            var nodes = EnumerateNodes(tree.GetCompilationUnitRoot());
+#if PARSING_TESTS_DUMP
+            nodes = nodes.ToArray(); //force eval to dump contents
+#endif
+            _treeEnumerator = nodes.GetEnumerator();
+
+            return tree;
+        }
+
+        /// <summary>
+        /// Parses given string and initializes a depth-first preorder enumerator.
+        /// </summary>
         protected CSharpSyntaxNode UsingNode(string text)
         {
             var root = ParseNode(text, options: null);
