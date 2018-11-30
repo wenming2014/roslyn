@@ -2859,8 +2859,57 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             }
         }
 
+        private void AddSynthesizedRecordMembersIfNecessary(ArrayBuilder<Symbol> members, DiagnosticBag diagnostics)
+        {
+            if (declaration.Kind == DeclarationKind.Interface)
+            {
+                return;
+            }
+
+            Debug.Assert(declaration.Kind == DeclarationKind.Class || declaration.Kind == DeclarationKind.Struct);
+
+            ParameterListSyntax paramList = null;
+            foreach (SingleTypeDeclaration decl in declaration.Declarations)
+            {
+                var syntaxNode = decl.SyntaxReference.GetSyntax();
+                ParameterListSyntax curParamList = null;
+                switch (declaration.Kind)
+                {
+                    case DeclarationKind.Class:
+                        var classDecl = (ClassDeclarationSyntax)syntaxNode;
+                        curParamList = classDecl.ParameterList;
+                        break;
+                    case DeclarationKind.Struct:
+                        var structDecl = (StructDeclarationSyntax)syntaxNode;
+                        curParamList = structDecl.ParameterList;
+                        break;
+                }
+
+                if (paramList is null)
+                {
+                    paramList = curParamList;
+                }
+                else
+                {
+                    // PROTOTYPE: Add error for multiple parameter lists
+                }
+            }
+
+            if (paramList is null)
+            {
+                return;
+            }
+
+            BinderFactory binderFactory = this.DeclaringCompilation.GetBinderFactory(paramList.SyntaxTree);
+            var binder = binderFactory.GetBinder(paramList);
+
+            members.Add(new SynthesizedRecordConstructor(this, binder, paramList, diagnostics));
+        }
+
         private void AddSynthesizedConstructorsIfNecessary(ArrayBuilder<Symbol> members, ArrayBuilder<ImmutableArray<FieldOrPropertyInitializer>> staticInitializers, DiagnosticBag diagnostics)
         {
+            AddSynthesizedRecordMembersIfNecessary(members, diagnostics);
+
             //we're not calling the helpers on NamedTypeSymbol base, because those call
             //GetMembers and we're inside a GetMembers call ourselves (i.e. stack overflow)
             var hasInstanceConstructor = false;
