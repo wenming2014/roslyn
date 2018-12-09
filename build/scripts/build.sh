@@ -135,8 +135,7 @@ function stop_processes {
     pkill -9 "vbcscompiler" || true
 }
 
-if [[ "$build_in_docker" = true ]]
-then
+if [[ "$build_in_docker" = true ]]; then
     echo "Docker exec: $args"
     BUILD_COMMAND=/opt/code/build.sh "$scriptroot"/dockerrun.sh $args
     exit
@@ -149,27 +148,34 @@ InitializeDotNetCli $restore
 
 export PATH="$DOTNET_INSTALL_DIR:$PATH"
 
-if [[ "$restore" == true ]]
-then
+if [[ "$restore" == true ]]; then
     echo "Restoring RoslynToolset.csproj"
     dotnet restore "${root_path}/build/ToolsetPackages/RoslynToolset.csproj" "/bl:${logs_path}/Restore-RoslynToolset.binlog"
     echo "Restoring Compilers.sln"
     dotnet restore "${root_path}/Compilers.sln" "/bl:${logs_path}/Restore-Compilers.binlog"
 fi
 
-build_args="--no-restore -c ${build_configuration} /nologo"
+if [[ $use_mono = true ]]; then
+    build_args="-v:minimal"
+else
+    build_args="--no-restore -c ${build_configuration} /nologo"
+fi
 
-if [[ "$build_bootstrap" == true ]]
-then
+if [[ "$build_bootstrap" == true ]]; then
     echo "Building bootstrap compiler"
 
     rm -rf ${bootstrap_path}
     mkdir -p ${bootstrap_path} 
 
-    project_path=src/NuGet/Microsoft.NETCore.Compilers/Microsoft.NETCore.Compilers.Package.csproj
+    if [[ $use_mono = true ]]; then
+        package_name="Microsoft.Net.Compilers"
+    else
+        package_name="Microsoft.NETCore.Compilers"
+    fi
+    project_path="src/NuGet/$package_name/$package_name.Package.csproj"
 
     dotnet pack -nologo ${project_path} /p:DotNetUseShippingVersions=true /p:InitialDefineConstants=BOOTSTRAP /p:PackageOutputPath=${bootstrap_path}
-    unzip ${bootstrap_path}/Microsoft.NETCore.Compilers.*.nupkg -d ${bootstrap_path}
+    unzip ${bootstrap_path}/$package_name.*.nupkg -d ${bootstrap_path}
     chmod -R 755 ${bootstrap_path}
 
     echo "Cleaning Bootstrap compiler artifacts"
@@ -178,20 +184,17 @@ then
     stop_processes
 fi
 
-if [[ "${use_bootstrap}" == true ]]
-then
+if [[ "${use_bootstrap}" == true ]]; then
     build_args+=" /p:BootstrapBuildPath=${bootstrap_path}"
 fi
 
-if [[ "${ci}" == true ]]
-then
+if [[ "${ci}" == true ]]; then
     build_args+=" /p:ContinuousIntegrationBuild=true"
 fi
 
 # https://github.com/dotnet/roslyn/issues/23736
 UNAME="$(uname)"
-if [[ "$UNAME" == "Darwin" ]]
-then
+if [[ "$UNAME" == "Darwin" ]]; then
     build_args+=" /p:UseRoslynAnalyzers=false"
 fi
 
@@ -199,18 +202,20 @@ if [[ "${build}" == true ]]
 then
     echo "Building Compilers.sln"
 
-    if [[ "${pack}" == true ]]
-    then
+    if [[ "${pack}" == true ]]; then
         build_args+=" /t:Pack"
     fi
 
-    dotnet build "${root_path}/Compilers.sln" ${build_args} "/bl:${binaries_path}/Build.binlog"
+    if [[ $use_mono = true ]]; then
+        build_cmd="msbuild"
+    else
+        build_cmd="dotnet build"
+    fi
+    ${build_cmd} "${root_path}/Compilers.sln" ${build_args} "/bl:${binaries_path}/Build.binlog"
 fi
 
-if [[ "${stop_vbcscompiler}" == true ]]
-then
-    if [[ "${use_bootstrap}" == true ]]
-    then
+if [[ "${stop_vbcscompiler}" == true ]]; then
+    if [[ "${use_bootstrap}" == true ]]; then
         dotnet build-server shutdown
     else
         echo "--stop-vbcscompiler requires --use-bootstrap. Aborting."
@@ -218,10 +223,8 @@ then
     fi
 fi
 
-if [[ "${test_}" == true ]]
-then
-    if [[ "${use_mono}" == true ]]
-    then
+if [[ "${test_}" == true ]]; then
+    if [[ "${use_mono}" == true ]]; then
         test_runtime=mono
 
         # Echo out the mono version to the comamnd line so it's visible in CI logs. It's not fixed
