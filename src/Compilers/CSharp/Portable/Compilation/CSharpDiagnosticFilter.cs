@@ -28,7 +28,13 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="nullableOption">Whether Nullable Reference Types feature is enabled globally</param>
         /// <param name="specificDiagnosticOptions">How specific diagnostics should be reported</param>
         /// <returns>A diagnostic updated to reflect the options, or null if it has been filtered out</returns>
-        public static Diagnostic Filter(Diagnostic d, int warningLevelOption, bool nullableOption, ReportDiagnostic generalDiagnosticOption, IDictionary<string, ReportDiagnostic> specificDiagnosticOptions)
+        public static Diagnostic Filter(
+            Diagnostic d,
+            int warningLevelOption,
+            bool nullableOption,
+            ReportDiagnostic generalDiagnosticOption,
+            IDictionary<string, ReportDiagnostic> specificDiagnosticOptions,
+            ImmutableDictionary<string, ReportDiagnostic> fileDiagnosticOptionsOpt)
         {
             if (d == null)
             {
@@ -65,22 +71,35 @@ namespace Microsoft.CodeAnalysis.CSharp
             if (s_alinkWarnings.Contains((ErrorCode)d.Code) &&
                 specificDiagnosticOptions.Keys.Contains(CSharp.MessageProvider.Instance.GetIdForErrorCode((int)ErrorCode.WRN_ALinkWarn)))
             {
-                reportAction = GetDiagnosticReport(ErrorFacts.GetSeverity(ErrorCode.WRN_ALinkWarn),
+                reportAction = GetDiagnosticReport(
+                    ErrorFacts.GetSeverity(ErrorCode.WRN_ALinkWarn),
                     d.IsEnabledByDefault,
                     CSharp.MessageProvider.Instance.GetIdForErrorCode((int)ErrorCode.WRN_ALinkWarn),
                     ErrorFacts.GetWarningLevel(ErrorCode.WRN_ALinkWarn),
-                    d.Location as Location,
+                    d.Location,
                     d.Category,
                     warningLevelOption,
                     nullableOption,
                     generalDiagnosticOption,
                     specificDiagnosticOptions,
+                    fileDiagnosticOptionsOpt,
                     out hasPragmaSuppression);
             }
             else
             {
-                reportAction = GetDiagnosticReport(d.Severity, d.IsEnabledByDefault, d.Id, d.WarningLevel, d.Location as Location,
-                    d.Category, warningLevelOption, nullableOption, generalDiagnosticOption, specificDiagnosticOptions, out hasPragmaSuppression);
+                reportAction = GetDiagnosticReport(
+                    d.Severity,
+                    d.IsEnabledByDefault,
+                    d.Id,
+                    d.WarningLevel,
+                    d.Location,
+                    d.Category,
+                    warningLevelOption,
+                    nullableOption,
+                    generalDiagnosticOption,
+                    specificDiagnosticOptions,
+                    fileDiagnosticOptionsOpt,
+                    out hasPragmaSuppression);
             }
 
             if (hasPragmaSuppression)
@@ -115,6 +134,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             bool nullableOption,
             ReportDiagnostic generalDiagnosticOption,
             IDictionary<string, ReportDiagnostic> specificDiagnosticOptions,
+            ImmutableDictionary<string, ReportDiagnostic> fileDiagnosticOptionsOpt,
             out bool hasPragmaSuppression)
         {
             hasPragmaSuppression = false;
@@ -127,12 +147,13 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             ReportDiagnostic report;
             SyntaxTree tree = location?.SourceTree;
+            Debug.Assert(tree is null || ReferenceEquals(fileDiagnosticOptionsOpt, tree.DiagnosticOptions));
             bool isSpecified = false;
 
-            if (tree != null && tree.DiagnosticOptions.TryGetValue(id, out var treeReport))
+            if (fileDiagnosticOptionsOpt != null && fileDiagnosticOptionsOpt.TryGetValue(id, out var fileReport))
             {
-                // 2. Syntax tree level
-                report = treeReport;
+                // 2. Syntax tree or file level
+                report = fileReport;
                 isSpecified = true;
             }
             else if (specificDiagnosticOptions.TryGetValue(id, out var specificReport))

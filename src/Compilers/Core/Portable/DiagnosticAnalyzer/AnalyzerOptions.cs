@@ -4,6 +4,7 @@ using System;
 using System.Collections.Immutable;
 using System.Linq;
 using Roslyn.Utilities;
+using DiagnosticOptions = System.Collections.Immutable.ImmutableDictionary<string, Microsoft.CodeAnalysis.ReportDiagnostic>;
 
 namespace Microsoft.CodeAnalysis.Diagnostics
 {
@@ -20,6 +21,12 @@ namespace Microsoft.CodeAnalysis.Diagnostics
         public ImmutableArray<AdditionalText> AdditionalFiles { get; }
 
         /// <summary>
+        /// A map from <see cref="AdditionalFiles"/> paths to a map from
+        /// diagnostic id to <see cref="ReportDiagnostic"/>.
+        /// </summary>
+        public ImmutableDictionary<string, DiagnosticOptions> AdditionalFileDiagnosticOptions { get; }
+
+        /// <summary>
         /// A set of options keyed to <see cref="SyntaxTree"/> or <see cref="AdditionalText"/>.
         /// </summary>
         public AnalyzerConfigOptionsProvider AnalyzerConfigOptionsProvider { get; }
@@ -29,15 +36,24 @@ namespace Microsoft.CodeAnalysis.Diagnostics
         /// </summary>
         /// <param name="additionalFiles">A set of additional non-code text files that can be used by analyzers.</param>
         /// <param name="optionsProvider">A set of per-tree options that can be used by analyzers.</param>
-        public AnalyzerOptions(ImmutableArray<AdditionalText> additionalFiles, AnalyzerConfigOptionsProvider optionsProvider)
+        public AnalyzerOptions(
+            ImmutableArray<AdditionalText> additionalFiles,
+            AnalyzerConfigOptionsProvider optionsProvider,
+            ImmutableDictionary<string, DiagnosticOptions> additionalFileDiagnosticOptions)
         {
             if (optionsProvider is null)
             {
                 throw new ArgumentNullException(nameof(optionsProvider));
             }
 
+            if (additionalFileDiagnosticOptions is null)
+            {
+                throw new ArgumentNullException(nameof(additionalFileDiagnosticOptions));
+            }
+
             AdditionalFiles = additionalFiles.NullToEmpty();
             AnalyzerConfigOptionsProvider = optionsProvider;
+            AdditionalFileDiagnosticOptions = additionalFileDiagnosticOptions;
         }
 
         /// <summary>
@@ -45,7 +61,9 @@ namespace Microsoft.CodeAnalysis.Diagnostics
         /// </summary>
         /// <param name="additionalFiles">A set of additional non-code text files that can be used by analyzers.</param>
         public AnalyzerOptions(ImmutableArray<AdditionalText> additionalFiles)
-            : this(additionalFiles, CompilerAnalyzerConfigOptionsProvider.Empty)
+            : this(additionalFiles,
+                   CompilerAnalyzerConfigOptionsProvider.Empty,
+                   ImmutableDictionary<string, DiagnosticOptions>.Empty)
         { }
 
         /// <summary>

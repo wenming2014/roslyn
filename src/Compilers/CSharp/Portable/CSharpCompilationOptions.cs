@@ -737,9 +737,18 @@ namespace Microsoft.CodeAnalysis.CSharp
                    Hash.Combine(TopLevelBinderFlags.GetHashCode(), this.Nullable.GetHashCode()))));
         }
 
-        internal override Diagnostic FilterDiagnostic(Diagnostic diagnostic)
+        internal override Diagnostic FilterDiagnostic(
+            Diagnostic diagnostic,
+            ImmutableDictionary<string, ReportDiagnostic> fileDiagnosticOptionsOpt)
         {
-            return CSharpDiagnosticFilter.Filter(diagnostic, WarningLevel, Nullable, GeneralDiagnosticOption, SpecificDiagnosticOptions);
+            Debug.Assert(fileDiagnosticOptionsOpt is null || diagnostic.Location.SourceTree is null);
+            return CSharpDiagnosticFilter.Filter(
+                diagnostic,
+                WarningLevel,
+                Nullable,
+                GeneralDiagnosticOption,
+                SpecificDiagnosticOptions,
+                diagnostic.Location.SourceTree?.DiagnosticOptions ?? fileDiagnosticOptionsOpt);
         }
 
         protected override CompilationOptions CommonWithModuleName(string moduleName)

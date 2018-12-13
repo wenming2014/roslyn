@@ -804,15 +804,18 @@ namespace Microsoft.CodeAnalysis
                 analyzerExceptionDiagnostics = new DiagnosticBag();
 
                 var analyzerConfigProvider = CompilerAnalyzerConfigOptionsProvider.Empty;
+                var additionalFileDiagnosticOptions = ImmutableDictionary.CreateBuilder<string, TreeOptions>();
                 if (Arguments.AnalyzerConfigPaths.Length > 0)
                 {
-                    // PROTOTYPE: The compiler currently doesn't support configuring diagnostic reporting
-                    // on additional text files individually.
                     AnalyzerConfigOptionsResult result = GetAnalyzerConfigOptions(
                         additionalTextFiles.SelectAsArray(f => f.Path),
                         sortedAnalyzerConfigs);
                     diagnostics.AddRange(result.Diagnostics);
                     var additionalFileAnalyzerOptions = result.AnalyzerOptions;
+                    for (int i = 0; i < additionalTextFiles.Length; i++)
+                    {
+                        additionalFileDiagnosticOptions.Add(additionalTextFiles[i].Path, result.TreeOptions[i]);
+                    }
 
                     analyzerConfigProvider = CreateAnalyzerConfigOptionsProvider(
                         compilation.SyntaxTrees,
@@ -821,8 +824,8 @@ namespace Microsoft.CodeAnalysis
                         additionalFileAnalyzerOptions);
                 }
 
-                Diagnostics.AnalyzerOptions analyzerOptions = CreateAnalyzerOptions(
-                    additionalTextFiles, analyzerConfigProvider);
+                AnalyzerOptions analyzerOptions = CreateAnalyzerOptions(
+                    additionalTextFiles, analyzerConfigProvider, additionalFileDiagnosticOptions.ToImmutable());
 
                 analyzerDriver = AnalyzerDriver.CreateAndAttachToCompilation(
                     compilation,
@@ -1082,8 +1085,12 @@ namespace Microsoft.CodeAnalysis
         // virtual for testing
         protected virtual Diagnostics.AnalyzerOptions CreateAnalyzerOptions(
             ImmutableArray<AdditionalText> additionalTextFiles,
-            AnalyzerConfigOptionsProvider analyzerConfigOptionsProvider)
-            => new Diagnostics.AnalyzerOptions(additionalTextFiles, analyzerConfigOptionsProvider);
+            AnalyzerConfigOptionsProvider analyzerConfigOptionsProvider,
+            ImmutableDictionary<string, TreeOptions> additionalFileDiagnosticOptions)
+            => new AnalyzerOptions(
+                additionalTextFiles,
+                analyzerConfigOptionsProvider,
+                additionalFileDiagnosticOptions);
 
         private bool WriteTouchedFiles(DiagnosticBag diagnostics, TouchedFileLogger touchedFilesLogger, string finalXmlFilePath)
         {

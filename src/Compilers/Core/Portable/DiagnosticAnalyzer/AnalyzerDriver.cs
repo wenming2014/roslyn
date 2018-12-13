@@ -578,6 +578,17 @@ namespace Microsoft.CodeAnalysis.Diagnostics
             Diagnostic d;
             while (DiagnosticQueue.TryDequeue(out d))
             {
+                Location location = d.Location;
+                if (location.Kind == LocationKind.ExternalFile &&
+                    location.GetLineSpan().Path is string path &&
+                    AnalyzerExecutor.AnalyzerOptions.AdditionalFileDiagnosticOptions.TryGetValue(path, out var diagnosticOptions) &&
+                    diagnosticOptions.TryGetValue(path, out var newSeverity))
+                {
+                    d = d.WithSeverity(newSeverity);
+                }
+
+                // Check if this is a diagnostic in an additional file that is
+                // configured through analyzer options
                 d = suppressMessageState.ApplySourceSuppressions(d);
                 if (reportSuppressedDiagnostics || !d.IsSuppressed)
                 {

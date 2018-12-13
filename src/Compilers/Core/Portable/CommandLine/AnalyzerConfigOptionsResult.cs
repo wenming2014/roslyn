@@ -20,6 +20,7 @@ namespace Microsoft.CodeAnalysis
         /// <see cref="AnalyzerConfig.GetAnalyzerConfigOptions{TStringList, TACList}(TStringList, TACList)" />
         /// </remarks>
         public ImmutableArray<TreeOptions> TreeOptions { get; }
+
         /// <summary>
         /// Options that do not have any special compiler behavior and are passed to analyzers as-is.
         /// If there are no options for a given source path, that entry in the array is null.
