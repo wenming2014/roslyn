@@ -9,6 +9,7 @@ using static Microsoft.CodeAnalysis.Compilation;
 
 namespace CompilerBenchmarks
 {
+    [CsvExporter]
     public class StageBenchmarks
     {
         private Compilation _comp;
