@@ -506,7 +506,9 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// </summary>
         /// <returns>An ImmutableArray containing all the members of this symbol with the given name. If there are
         /// no members with this name, returns an empty ImmutableArray. Never returns null.</returns>
-        public abstract override ImmutableArray<Symbol> GetMembers(string name);
+        public sealed override ImmutableArray<Symbol> GetMembers(string name) => GetMembers(name.AsMemory());
+
+        internal abstract override ImmutableArray<Symbol> GetMembers(ReadOnlyMemory<char> name);
 
         internal virtual ImmutableArray<Symbol> GetSimpleNonTypeMembers(string name)
         {

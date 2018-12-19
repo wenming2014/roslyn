@@ -129,10 +129,12 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             return (object)constructor == null ? ImmutableArray<Symbol>.Empty : ImmutableArray.Create(constructor);
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name)
+        internal override ImmutableArray<Symbol> GetMembers(ReadOnlyMemory<char> name)
         {
             var ctor = Constructor;
-            return ((object)ctor != null && name == ctor.Name) ? ImmutableArray.Create<Symbol>(ctor) : ImmutableArray<Symbol>.Empty;
+            return (object)ctor != null && name.Span == ctor.Name.AsSpan()
+                ? ImmutableArray.Create<Symbol>(ctor)
+                : ImmutableArray<Symbol>.Empty;
         }
 
         internal override IEnumerable<FieldSymbol> GetFieldsToEmit()

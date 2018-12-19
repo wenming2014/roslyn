@@ -61,7 +61,7 @@ namespace Microsoft.CodeAnalysis
         /// <summary>
         /// Individual parts of qualified namespace name.
         /// </summary>
-        private ImmutableArray<string> _namespaceSegments;
+        private ImmutableArray<ReadOnlyMemory<char>> _namespaceSegments;
 
         public static MetadataTypeName FromFullName(string fullName, bool useCLSCompliantNameArityEncoding = false, int forcedArity = -1)
         {
@@ -81,7 +81,7 @@ namespace Microsoft.CodeAnalysis
             name._inferredArity = -1;
             name._useCLSCompliantNameArityEncoding = useCLSCompliantNameArityEncoding;
             name._forcedArity = (short)forcedArity;
-            name._namespaceSegments = default(ImmutableArray<string>);
+            name._namespaceSegments = default;
 
             return name;
         }
@@ -109,7 +109,7 @@ namespace Microsoft.CodeAnalysis
             name._inferredArity = -1;
             name._useCLSCompliantNameArityEncoding = useCLSCompliantNameArityEncoding;
             name._forcedArity = (short)forcedArity;
-            name._namespaceSegments = default(ImmutableArray<string>);
+            name._namespaceSegments = default;
 
             return name;
         }
@@ -133,7 +133,7 @@ namespace Microsoft.CodeAnalysis
             name._inferredArity = -1;
             name._useCLSCompliantNameArityEncoding = useCLSCompliantNameArityEncoding;
             name._forcedArity = (short)forcedArity;
-            name._namespaceSegments = ImmutableArray<string>.Empty;
+            name._namespaceSegments = ImmutableArray<ReadOnlyMemory<char>>.Empty;
 
             return name;
         }
@@ -267,7 +267,7 @@ namespace Microsoft.CodeAnalysis
         /// <summary>
         /// Individual parts of qualified namespace name.
         /// </summary>
-        public ImmutableArray<string> NamespaceSegments
+        public ImmutableArray<ReadOnlyMemory<char>> NamespaceSegments
         {
             get
             {

@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -120,6 +121,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// <returns>An ImmutableArray containing all the members of this symbol with the given name. If there are
         /// no members with this name, returns an empty ImmutableArray. Never returns null.</returns>
         public abstract ImmutableArray<Symbol> GetMembers(string name);
+
+        internal abstract ImmutableArray<Symbol> GetMembers(ReadOnlyMemory<char> name);
 
         /// <summary>
         /// Get all the members of this symbol that are types. The members may not be in a particular order, and the order

@@ -244,7 +244,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             return builder.ToImmutableAndFree();
         }
 
-        public sealed override ImmutableArray<Symbol> GetMembers(string name)
+        internal sealed override ImmutableArray<Symbol> GetMembers(ReadOnlyMemory<char> name)
         {
             if (_unbound) return StaticCast<Symbol>.From(GetTypeMembers(name));
 

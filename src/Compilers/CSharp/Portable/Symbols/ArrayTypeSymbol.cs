@@ -254,7 +254,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             return ImmutableArray<Symbol>.Empty;
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name)
+        internal override ImmutableArray<Symbol> GetMembers(ReadOnlyMemory<char> name)
         {
             return ImmutableArray<Symbol>.Empty;
         }

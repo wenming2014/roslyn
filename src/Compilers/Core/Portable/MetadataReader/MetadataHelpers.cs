@@ -557,16 +557,16 @@ ExitDecodeTypeName:
         /// <summary>
         /// An ImmutableArray representing the single string "System"
         /// </summary>
-        private static readonly ImmutableArray<string> s_splitQualifiedNameSystem = ImmutableArray.Create(SystemString);
+        private static readonly ImmutableArray<ReadOnlyMemory<char>> s_splitQualifiedNameSystem
+            = ImmutableArray.Create(SystemString.AsMemory());
 
-        internal static ImmutableArray<string> SplitQualifiedName(
-              string name)
+        internal static ImmutableArray<ReadOnlyMemory<char>> SplitQualifiedName(string name)
         {
             Debug.Assert(name != null);
 
             if (name.Length == 0)
             {
-                return ImmutableArray<string>.Empty;
+                return ImmutableArray<ReadOnlyMemory<char>>.Empty;
             }
 
             // PERF: Avoid String.Split because of the allocations. Also, we can special-case
@@ -583,10 +583,10 @@ ExitDecodeTypeName:
 
             if (dots == 0)
             {
-                return name == SystemString ? s_splitQualifiedNameSystem : ImmutableArray.Create(name);
+                return name == SystemString ? s_splitQualifiedNameSystem : ImmutableArray.Create(name.AsMemory());
             }
 
-            var result = ArrayBuilder<string>.GetInstance(dots + 1);
+            var result = ArrayBuilder<ReadOnlyMemory<char>>.GetInstance(dots + 1);
 
             int start = 0;
             for (int i = 0; dots > 0; i++)
@@ -596,11 +596,11 @@ ExitDecodeTypeName:
                     int len = i - start;
                     if (len == 6 && start == 0 && name.StartsWith(SystemString, StringComparison.Ordinal))
                     {
-                        result.Add(SystemString);
+                        result.Add(SystemString.AsMemory());
                     }
                     else
                     {
-                        result.Add(name.Substring(start, len));
+                        result.Add(name.AsMemory(start, len));
                     }
 
                     dots--;
@@ -608,7 +608,7 @@ ExitDecodeTypeName:
                 }
             }
 
-            result.Add(name.Substring(start));
+            result.Add(name.AsMemory(start));
 
             return result.ToImmutableAndFree();
         }

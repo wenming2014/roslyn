@@ -31,7 +31,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             internal readonly ImmutableArray<AnonymousTypePropertySymbol> Properties;
 
             /// <summary> Maps member names to symbol(s) </summary>
-            private readonly MultiDictionary<string, Symbol> _nameToSymbols = new MultiDictionary<string, Symbol>();
+            private readonly MultiDictionary<ReadOnlyMemory<char>, Symbol> _nameToSymbols
+                = new MultiDictionary<ReadOnlyMemory<char>, Symbol>();
 
             /// <summary> Anonymous type manager owning this template </summary>
             internal readonly AnonymousTypeManager Manager;
@@ -85,7 +86,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 //  fill nameToSymbols map
                 foreach (var symbol in _members)
                 {
-                    _nameToSymbols.Add(symbol.Name, symbol);
+                    _nameToSymbols.Add(symbol.Name.AsMemory(), symbol);
                 }
             }
 
@@ -106,7 +107,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
             internal override bool HasCodeAnalysisEmbeddedAttribute => false;
 
-            public override ImmutableArray<Symbol> GetMembers(string name)
+            internal override ImmutableArray<Symbol> GetMembers(ReadOnlyMemory<char> name)
             {
                 var symbols = _nameToSymbols[name];
                 var builder = ArrayBuilder<Symbol>.GetInstance(symbols.Count);
@@ -130,7 +131,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
             public override IEnumerable<string> MemberNames
             {
-                get { return _nameToSymbols.Keys; }
+                get { return _nameToSymbols.Keys.Select(x => x.ToString()); }
             }
 
             public override Symbol ContainingSymbol
