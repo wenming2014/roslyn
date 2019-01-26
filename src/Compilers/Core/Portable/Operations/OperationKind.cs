@@ -226,20 +226,18 @@ namespace Microsoft.CodeAnalysis
         SuppressNullableWarning = 0x62,
         /// <summary>Indicates an <see cref="IRangeOperation"/>.</summary>
         Range = 0x63,
-        /// <summary>Indicates an <see cref="IFromEndIndexOperation"/>.</summary>
-        FromEndIndex = 0x64,
         /// <summary>Indicates an <see cref="IReDimOperation"/>.</summary>
-        ReDim = 0x65,
+        ReDim = 0x64,
         /// <summary>Indicates an <see cref="IReDimClauseOperation"/>.</summary>
-        ReDimClause = 0x66,
+        ReDimClause = 0x65,
         /// <summary>Indicates an <see cref="IRecursivePatternOperation"/>.</summary>
-        RecursivePattern = 0x67,
+        RecursivePattern = 0x66,
         /// <summary>Indicates an <see cref="IDiscardPatternOperation"/>.</summary>
-        DiscardPattern = 0x68,
+        DiscardPattern = 0x67,
         /// <summary>Indicates an <see cref="ISwitchExpressionOperation"/>.</summary>
-        SwitchExpression = 0x69,
+        SwitchExpression = 0x68,
         /// <summary>Indicates an <see cref="ISwitchExpressionArmOperation"/>.</summary>
-        SwitchExpressionArm = 0x6a,
+        SwitchExpressionArm = 0x69,
 
         // /// <summary>Indicates an <see cref="IFixedOperation"/>.</summary>
         // https://github.com/dotnet/roslyn/issues/21281

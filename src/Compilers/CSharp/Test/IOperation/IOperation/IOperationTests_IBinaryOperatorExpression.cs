@@ -7937,10 +7937,9 @@ IRangeOperation (OperationKind.Range, Type: System.Range) (Syntax: '0..^1')
       Operand: 
         ILiteralOperation (OperationKind.Literal, Type: System.Int32, Constant: 0) (Syntax: '0')
   RightOperand: 
-    IFromEndIndexOperation (OperationKind.FromEndIndex, Type: System.Index) (Syntax: '^1')
+    IUnaryOperation (UnaryOperatorKind.Hat) (OperatorMethod: System.Index..ctor(System.Int32 value, System.Boolean fromEnd)) (OperationKind.Unary, Type: System.Index) (Syntax: '^1')
       Operand: 
-        ILiteralOperation (OperationKind.Literal, Type: System.Int32, Constant: 1) (Syntax: '1')
-";
+        ILiteralOperation (OperationKind.Literal, Type: System.Int32, Constant: 1) (Syntax: '1')";
 
             var operation = (IRangeOperation)VerifyOperationTreeForTest<RangeExpressionSyntax>(compilation, expectedOperationTree);
             Assert.Equal("System.Range System.Range.Create(System.Index start, System.Index end)", operation.Method.ToTestDisplayString());
@@ -8079,7 +8078,7 @@ IRangeOperation (IsLifted) (OperationKind.Range, Type: System.Range?) (Syntax: '
       Operand: 
         IParameterReferenceOperation: start (OperationKind.ParameterReference, Type: System.Int32?) (Syntax: 'start')
   RightOperand: 
-    IFromEndIndexOperation (IsLifted) (OperationKind.FromEndIndex, Type: System.Index?) (Syntax: '^end')
+    IUnaryOperation (UnaryOperatorKind.Hat, IsLifted) (OperatorMethod: System.Index..ctor(System.Int32 value, System.Boolean fromEnd)) (OperationKind.Unary, Type: System.Index?) (Syntax: '^end')
       Operand: 
         IParameterReferenceOperation: end (OperationKind.ParameterReference, Type: System.Int32?) (Syntax: 'end')
 ";

@@ -1966,14 +1966,17 @@ namespace Microsoft.CodeAnalysis.Operations
 
         private IOperation CreateFromEndIndexExpressionOperation(BoundFromEndIndexExpression boundIndex)
         {
-            return new CSharpLazyFromEndIndexOperation(
+            return new CSharpLazyUnaryOperation(
                 operationFactory: this,
                 boundIndex.Operand,
+                UnaryOperatorKind.Hat,
                 isLifted: boundIndex.Type.IsNullableType(),
+                isChecked: false,
+                operatorMethod: boundIndex.MethodOpt,
                 _semanticModel,
                 boundIndex.Syntax,
                 boundIndex.Type,
-                boundIndex.MethodOpt,
+                constantValue: default,
                 isImplicit: boundIndex.WasCompilerGenerated);
         }
 

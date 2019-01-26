@@ -6567,11 +6567,6 @@ oneMoreTime:
                 operation.Syntax, operation.Type, operation.ConstantValue, IsImplicit(operation));
         }
 
-        public override IOperation VisitFromEndIndexOperation(IFromEndIndexOperation operation, int? argument)
-        {
-            return new FromEndIndexOperation(operation.IsLifted, semanticModel: null, operation.Syntax, operation.Type, Visit(operation.Operand), operation.Symbol, isImplicit: IsImplicit(operation));
-        }
-
         public override IOperation VisitRangeOperation(IRangeOperation operation, int? argument)
         {
             if (!(operation.LeftOperand is null))
