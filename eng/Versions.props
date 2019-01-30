@@ -111,11 +111,10 @@
     <MicrosoftVisualStudioProgressionCodeSchemaVersion>15.8.27812-alpha</MicrosoftVisualStudioProgressionCodeSchemaVersion>
     <MicrosoftVisualStudioProgressionCommonVersion>15.8.27812-alpha</MicrosoftVisualStudioProgressionCommonVersion>
     <MicrosoftVisualStudioProgressionInterfacesVersion>15.8.27812-alpha</MicrosoftVisualStudioProgressionInterfacesVersion>
-    <MicrosoftVisualStudioProjectSystemVersion>15.3.178-pre-g209fb07c2e</MicrosoftVisualStudioProjectSystemVersion>
-    <MicrosoftVisualStudioProjectSystemManagedVersion>2.3.6152103</MicrosoftVisualStudioProjectSystemManagedVersion>
+    <MicrosoftVisualStudioProjectSystemVersion>16.0.374-pre</MicrosoftVisualStudioProjectSystemVersion>
     <MicrosoftVisualStudioRemoteControlVersion>14.0.249-master2E2DC10C</MicrosoftVisualStudioRemoteControlVersion>
     <MicrosoftVisualStudioSDKAnalyzersVersion>15.7.7</MicrosoftVisualStudioSDKAnalyzersVersion>
-    <MicrosoftVisualStudioSetupConfigurationInteropVersion>1.15.103</MicrosoftVisualStudioSetupConfigurationInteropVersion>
+    <MicrosoftVisualStudioSetupConfigurationInteropVersion>1.16.30</MicrosoftVisualStudioSetupConfigurationInteropVersion>
     <MicrosoftVisualStudioShell150Version>15.8.27828</MicrosoftVisualStudioShell150Version>
     <MicrosoftVisualStudioShellFrameworkVersion>15.8.27828</MicrosoftVisualStudioShellFrameworkVersion>
     <MicrosoftVisualStudioShellDesignVersion>15.7.27703</MicrosoftVisualStudioShellDesignVersion>
