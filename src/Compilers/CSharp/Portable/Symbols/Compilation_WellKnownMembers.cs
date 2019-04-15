@@ -119,6 +119,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 }
 
                 MemberDescriptor descriptor = WellKnownMembers.GetDescriptor(member);
+                Debug.Assert(descriptor.DeclaringTypeId > (int)SpecialType.Count);
                 NamedTypeSymbol type = descriptor.DeclaringTypeId <= (int)SpecialType.Count
                                             ? this.GetSpecialType((SpecialType)descriptor.DeclaringTypeId)
                                             : this.GetWellKnownType((WellKnownType)descriptor.DeclaringTypeId);
