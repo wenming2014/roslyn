@@ -114,6 +114,7 @@ modifier
   | 'unsafe'
   | 'virtual'
   | 'volatile'
+  | data_keyword
   ;
 
 variable_declaration
@@ -289,7 +290,7 @@ type_declaration
   ;
 
 class_declaration
-  : attribute_list* modifier* 'class' identifier_token type_parameter_list? base_list? type_parameter_constraint_clause* '{' member_declaration* '}' ';'?
+  : attribute_list* modifier* 'class' identifier_token type_parameter_list? parameter_list? base_list? type_parameter_constraint_clause* '{'? member_declaration* '}'? ';'?
   ;
 
 interface_declaration
@@ -297,7 +298,7 @@ interface_declaration
   ;
 
 struct_declaration
-  : attribute_list* modifier* 'struct' identifier_token type_parameter_list? base_list? type_parameter_constraint_clause* '{' member_declaration* '}' ';'?
+  : attribute_list* modifier* 'struct' identifier_token type_parameter_list? parameter_list? base_list? type_parameter_constraint_clause* '{'? member_declaration* '}'? ';'?
   ;
 
 delegate_declaration
@@ -1205,6 +1206,10 @@ base_parameter_list
   ;
 
 character_literal_token
+  : /* see lexical specification */
+  ;
+
+data_keyword
   : /* see lexical specification */
   ;
 
