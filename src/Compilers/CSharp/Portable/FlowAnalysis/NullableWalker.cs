@@ -1547,12 +1547,112 @@ namespace Microsoft.CodeAnalysis.CSharp
         public override BoundNode VisitBlock(BoundBlock node)
         {
             DeclareLocals(node.Locals);
-            foreach (var statement in node.Statements)
-            {
-                VisitStatement(statement);
-            }
+            VisitStatementsWithLocalFunctions(node);
 
             return null;
+        }
+
+        private void VisitStatementsWithLocalFunctions(BoundBlock block)
+        {
+            // Local functions need to be analyzed separately for the purposes
+            // of determining the transition state (captured variables that
+            // change state at call sites) and semantic analysis, including
+            // diagnostics, in the body. This is because calculating the
+            // transition state is independent of the starting state for the
+            // local function, but calculating types and diagnostics need to be
+            // based on the Meet of all uses of the local function
+            if (!TrackingRegions && !block.LocalFunctions.IsDefaultOrEmpty)
+            {
+                // First try to find state transitions for the local function
+                // calls
+                foreach (var stmt in block.Statements)
+                {
+                    if (stmt.Kind == BoundKind.LocalFunctionStatement)
+                    {
+                        VisitWithoutDiagnostics(stmt);
+                    }
+                }
+
+                // Now visit everything else
+                foreach (var stmt in block.Statements)
+                {
+                    if (stmt.Kind != BoundKind.LocalFunctionStatement)
+                    {
+                        VisitStatement(stmt);
+                    }
+                }
+
+                // Now visit the local function bodies
+                if (!_disableDiagnostics)
+                {
+                    foreach (var stmt in block.Statements)
+                    {
+                        if (stmt is BoundLocalFunctionStatement localFunc)
+                        {
+                            VisitLocalFunctionBody(localFunc);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (var stmt in block.Statements)
+                {
+                    VisitStatement(stmt);
+                }
+            }
+        }
+
+        private void VisitLocalFunctionBody(BoundLocalFunctionStatement node)
+        {
+            var body = node.Body;
+            if (body != null)
+            {
+                var analyzedNullabilityMap = _analyzedNullabilityMapOpt;
+                var snapshotBuilder = _snapshotBuilderOpt;
+                if (_disableNullabilityAnalysis)
+                {
+                    analyzedNullabilityMap = null;
+                    snapshotBuilder = null;
+                }
+
+                var usages = GetOrCreateLocalFuncUsages(node.Symbol);
+                // The starting state is the top state, but with captured
+                // variables set according to Joining the state at all the
+                // local function use sites
+                var startingState = TopState().Clone();
+                for (int slot = 1; slot < usages.StartingState.Capacity; slot++)
+                {
+                    var symbol = variableBySlot[RootSlot(slot)].Symbol;
+                    if (Symbol.IsCaptured(symbol, node.Symbol))
+                    {
+                        startingState[slot] = startingState[slot].Meet(usages.StartingState[slot]);
+                    }
+                }
+                Analyze(compilation,
+                        node.Symbol,
+                        body,
+                        _binder,
+                        _conversions,
+                        Diagnostics,
+                        useMethodSignatureParameterTypes: false,
+                        delegateInvokeMethodOpt: null,
+                        initialState: GetVariableState(startingState),
+                        analyzedNullabilityMap,
+                        snapshotBuilder,
+                        returnTypesOpt: null);
+            }
+            SetInvalidResult();
+        }
+
+        protected override void VisitLocalFunctionUse(
+            LocalFunctionSymbol symbol,
+            LocalFunctionState localFunctionState,
+            SyntaxNode syntax,
+            bool isCall)
+        {
+            Join(ref localFunctionState.StartingState, ref State);
+            base.VisitLocalFunctionUse(symbol, localFunctionState, syntax, isCall);
         }
 
         public override BoundNode VisitDoStatement(BoundDoStatement node)
@@ -3130,6 +3230,10 @@ namespace Microsoft.CodeAnalysis.CSharp
             // Note: we analyze even omitted calls
             TypeWithState receiverType = VisitCallReceiver(node);
             ReinferMethodAndVisitArguments(node, receiverType);
+            if (node.Method?.OriginalDefinition is LocalFunctionSymbol localFunc)
+            {
+                VisitLocalFunctionUse(localFunc, node.Syntax, isCall: true);
+            }
             return null;
         }
 
@@ -5113,6 +5217,10 @@ namespace Microsoft.CodeAnalysis.CSharp
                         var method = conversion.Method;
                         if (group != null)
                         {
+                            if (method?.OriginalDefinition is LocalFunctionSymbol localFunc)
+                            {
+                                VisitLocalFunctionUse(localFunc, group.Syntax, isCall: false);
+                            }
                             method = CheckMethodGroupReceiverNullability(group, delegateType, method, conversion.IsExtensionMethod);
                         }
                         if (reportRemainingWarnings)
@@ -5662,11 +5770,9 @@ namespace Microsoft.CodeAnalysis.CSharp
         {
             Debug.Assert(node.Type.IsDelegateType());
 
-            if (node.MethodOpt?.MethodKind == MethodKind.LocalFunction)
+            if (node.MethodOpt?.OriginalDefinition is LocalFunctionSymbol localFunc)
             {
-                var syntax = node.Syntax;
-                var localFunc = (LocalFunctionSymbol)node.MethodOpt.OriginalDefinition;
-                ReplayReadsAndWrites(localFunc, syntax, writes: false);
+                VisitLocalFunctionUse(localFunc, node.Syntax, isCall: true);
             }
 
             var delegateType = (NamedTypeSymbol)node.Type;
@@ -5856,36 +5962,6 @@ namespace Microsoft.CodeAnalysis.CSharp
             var lambda = node.BindForErrorRecovery();
             VisitLambda(lambda, delegateTypeOpt: null, Diagnostics);
             SetNotNullResult(node);
-            return null;
-        }
-
-        public override BoundNode VisitLocalFunctionStatement(BoundLocalFunctionStatement node)
-        {
-            var body = node.Body;
-            if (body != null)
-            {
-                var analyzedNullabilityMap = _analyzedNullabilityMapOpt;
-                var snapshotBuilder = _snapshotBuilderOpt;
-                if (_disableNullabilityAnalysis)
-                {
-                    analyzedNullabilityMap = null;
-                    snapshotBuilder = null;
-                }
-
-                Analyze(compilation,
-                        node.Symbol,
-                        body,
-                        _binder,
-                        _conversions,
-                        Diagnostics,
-                        useMethodSignatureParameterTypes: false,
-                        delegateInvokeMethodOpt: null,
-                        initialState: GetVariableState(this.TopState()),
-                        analyzedNullabilityMap,
-                        snapshotBuilder,
-                        returnTypesOpt: null);
-            }
-            SetInvalidResult();
             return null;
         }
 
@@ -8039,9 +8115,15 @@ namespace Microsoft.CodeAnalysis.CSharp
 
         internal sealed class LocalFunctionState : AbstractLocalFunctionState
         {
+            /// <summary>
+            /// Defines the starting state used in the local function body to
+            /// produce diagnostics and determine types.
+            /// </summary>
+            public LocalState StartingState;
             public LocalFunctionState(LocalState unreachableState)
                 : base(unreachableState)
             {
+                StartingState = unreachableState;
             }
         }
 
