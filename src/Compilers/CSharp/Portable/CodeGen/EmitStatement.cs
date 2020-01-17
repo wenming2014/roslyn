@@ -19,68 +19,68 @@ namespace Microsoft.CodeAnalysis.CSharp.CodeGen
 {
     internal partial class CodeGenerator
     {
-        private void EmitStatement(BoundStatement statement)
+        private void EmitStatement(LoweredStatement statement)
         {
             switch (statement.Kind)
             {
-                case BoundKind.Block:
-                    EmitBlock((BoundBlock)statement);
+                case LoweredKind.Block:
+                    EmitBlock((LoweredBlock)statement);
                     break;
 
-                case BoundKind.Scope:
-                    EmitScope((BoundScope)statement);
+                case LoweredKind.Scope:
+                    EmitScope((LoweredScope)statement);
                     break;
 
-                case BoundKind.SequencePoint:
-                    this.EmitSequencePointStatement((BoundSequencePoint)statement);
+                case LoweredKind.SequencePoint:
+                    this.EmitSequencePointStatement((LoweredSequencePoint)statement);
                     break;
 
-                case BoundKind.SequencePointWithSpan:
-                    this.EmitSequencePointStatement((BoundSequencePointWithSpan)statement);
+                case LoweredKind.SequencePointWithSpan:
+                    this.EmitSequencePointStatement((LoweredSequencePointWithSpan)statement);
                     break;
 
-                case BoundKind.ExpressionStatement:
-                    EmitExpression(((BoundExpressionStatement)statement).Expression, false);
+                case LoweredKind.ExpressionStatement:
+                    EmitExpression(((LoweredExpressionStatement)statement).Expression, false);
                     break;
 
-                case BoundKind.StatementList:
-                    EmitStatementList((BoundStatementList)statement);
+                case LoweredKind.StatementList:
+                    EmitStatementList((LoweredStatementList)statement);
                     break;
 
-                case BoundKind.ReturnStatement:
-                    EmitReturnStatement((BoundReturnStatement)statement);
+                case LoweredKind.ReturnStatement:
+                    EmitReturnStatement((LoweredReturnStatement)statement);
                     break;
 
-                case BoundKind.GotoStatement:
-                    EmitGotoStatement((BoundGotoStatement)statement);
+                case LoweredKind.GotoStatement:
+                    EmitGotoStatement((LoweredGotoStatement)statement);
                     break;
 
-                case BoundKind.LabelStatement:
-                    EmitLabelStatement((BoundLabelStatement)statement);
+                case LoweredKind.LabelStatement:
+                    EmitLabelStatement((LoweredLabelStatement)statement);
                     break;
 
-                case BoundKind.ConditionalGoto:
-                    EmitConditionalGoto((BoundConditionalGoto)statement);
+                case LoweredKind.ConditionalGoto:
+                    EmitConditionalGoto((LoweredConditionalGoto)statement);
                     break;
 
-                case BoundKind.ThrowStatement:
-                    EmitThrowStatement((BoundThrowStatement)statement);
+                case LoweredKind.ThrowStatement:
+                    EmitThrowStatement((LoweredThrowStatement)statement);
                     break;
 
-                case BoundKind.TryStatement:
-                    EmitTryStatement((BoundTryStatement)statement);
+                case LoweredKind.TryStatement:
+                    EmitTryStatement((LoweredTryStatement)statement);
                     break;
 
-                case BoundKind.SwitchDispatch:
-                    EmitSwitchDispatch((BoundSwitchDispatch)statement);
+                case LoweredKind.SwitchDispatch:
+                    EmitSwitchDispatch((LoweredSwitchDispatch)statement);
                     break;
 
-                case BoundKind.StateMachineScope:
-                    EmitStateMachineScope((BoundStateMachineScope)statement);
+                case LoweredKind.StateMachineScope:
+                    EmitStateMachineScope((LoweredStateMachineScope)statement);
                     break;
 
-                case BoundKind.NoOpStatement:
-                    EmitNoOpStatement((BoundNoOpStatement)statement);
+                case LoweredKind.NoOpStatement:
+                    EmitNoOpStatement((LoweredNoOpStatement)statement);
                     break;
 
                 default:
@@ -98,14 +98,14 @@ namespace Microsoft.CodeAnalysis.CSharp.CodeGen
             ReleaseExpressionTemps();
         }
 
-        private int EmitStatementAndCountInstructions(BoundStatement statement)
+        private int EmitStatementAndCountInstructions(LoweredStatement statement)
         {
             int n = _builder.InstructionsEmitted;
             this.EmitStatement(statement);
             return _builder.InstructionsEmitted - n;
         }
 
-        private void EmitStatementList(BoundStatementList list)
+        private void EmitStatementList(LoweredStatementList list)
         {
             for (int i = 0, n = list.Statements.Length; i < n; i++)
             {
