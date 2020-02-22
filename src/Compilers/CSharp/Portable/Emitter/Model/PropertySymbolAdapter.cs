@@ -166,21 +166,21 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             return StaticCast<IParameterTypeInformation>.From(this.Parameters);
         }
 
-        ImmutableArray<ICustomModifier> ISignature.ReturnValueCustomModifiers
+        ImmutableArray<CustomModifier> ISignature.ReturnValueCustomModifiers
         {
             get
             {
                 CheckDefinitionInvariantAllowEmbedded();
-                return this.TypeWithAnnotations.CustomModifiers.As<ICustomModifier>();
+                return this.TypeWithAnnotations.CustomModifiers;
             }
         }
 
-        ImmutableArray<ICustomModifier> ISignature.RefCustomModifiers
+        ImmutableArray<CustomModifier> ISignature.RefCustomModifiers
         {
             get
             {
                 CheckDefinitionInvariantAllowEmbedded();
-                return this.RefCustomModifiers.As<ICustomModifier>();
+                return this.RefCustomModifiers;
             }
         }
 

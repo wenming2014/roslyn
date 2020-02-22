@@ -10,6 +10,7 @@ using Roslyn.Utilities;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.CodeGen;
+using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Cci
 {
@@ -63,15 +64,15 @@ namespace Microsoft.Cci
             this.Visit(customAttribute.GetNamedArguments(Context));
         }
 
-        public void Visit(ImmutableArray<ICustomModifier> customModifiers)
+        public void Visit(ImmutableArray<CustomModifier> customModifiers)
         {
-            foreach (ICustomModifier customModifier in customModifiers)
+            foreach (CustomModifier customModifier in customModifiers)
             {
                 this.Visit(customModifier);
             }
         }
 
-        public virtual void Visit(ICustomModifier customModifier)
+        public virtual void Visit(CustomModifier customModifier)
         {
             this.Visit(customModifier.GetModifier(Context));
         }

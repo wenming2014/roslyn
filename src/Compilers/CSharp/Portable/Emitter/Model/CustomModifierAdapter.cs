@@ -8,14 +8,9 @@ using Microsoft.CodeAnalysis.Emit;
 
 namespace Microsoft.CodeAnalysis.CSharp.Symbols
 {
-    internal partial class CSharpCustomModifier : Cci.ICustomModifier
+    internal partial class CSharpCustomModifier
     {
-        bool Cci.ICustomModifier.IsOptional
-        {
-            get { return this.IsOptional; }
-        }
-
-        Cci.ITypeReference Cci.ICustomModifier.GetModifier(EmitContext context)
+        internal override Cci.ITypeReference GetModifier(EmitContext context)
         {
             return ((PEModuleBuilder)context.Module).Translate(this.ModifierSymbol, (CSharpSyntaxNode)context.SyntaxNodeOpt, context.Diagnostics);
         }

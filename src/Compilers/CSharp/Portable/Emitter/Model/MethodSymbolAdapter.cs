@@ -207,19 +207,19 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             return StaticCast<Cci.IParameterDefinition>.From(this.Parameters);
         }
 
-        ImmutableArray<Cci.ICustomModifier> Cci.ISignature.ReturnValueCustomModifiers
+        ImmutableArray<CustomModifier> Cci.ISignature.ReturnValueCustomModifiers
         {
             get
             {
-                return this.ReturnTypeWithAnnotations.CustomModifiers.As<Cci.ICustomModifier>();
+                return this.ReturnTypeWithAnnotations.CustomModifiers;
             }
         }
 
-        ImmutableArray<Cci.ICustomModifier> Cci.ISignature.RefCustomModifiers
+        ImmutableArray<CustomModifier> Cci.ISignature.RefCustomModifiers
         {
             get
             {
-                return this.RefCustomModifiers.As<Cci.ICustomModifier>();
+                return this.RefCustomModifiers;
             }
         }
 

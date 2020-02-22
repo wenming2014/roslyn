@@ -897,7 +897,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 If hasModifiers Then
                     Dim modifiers = Me.GetTypeArgumentCustomModifiers(i)
                     If Not modifiers.IsDefaultOrEmpty Then
-                        arg = New Cci.ModifiedTypeReference(arg, modifiers.As(Of Cci.ICustomModifier))
+                        arg = New Cci.ModifiedTypeReference(arg, modifiers)
                     End If
                 End If
 

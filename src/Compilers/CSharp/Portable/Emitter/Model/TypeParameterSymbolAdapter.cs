@@ -238,7 +238,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     moduleBeingBuilt.Compilation.GetWellKnownType(WellKnownType.System_Runtime_InteropServices_UnmanagedType));
 
                 // emit "(class [mscorlib]System.ValueType modreq([mscorlib]System.Runtime.InteropServices.UnmanagedType" pattern as "unmanaged"
-                yield return new Cci.TypeReferenceWithAttributes(new Cci.ModifiedTypeReference(typeRef, ImmutableArray.Create<Cci.ICustomModifier>(modifier)));
+                yield return new Cci.TypeReferenceWithAttributes(new Cci.ModifiedTypeReference(typeRef, ImmutableArray.Create<CustomModifier>(modifier)));
 
                 // do not emit another one for Dev11 similarities
                 seenValueType = true;

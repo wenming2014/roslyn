@@ -943,7 +943,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
         ''' </summary>
         <Extension()>
         Friend Function VisitType(Of T)(type As TypeSymbol, predicate As Func(Of TypeSymbol, T, Boolean), arg As T) As TypeSymbol
-            ' In order to handle extremely "deep" types like "Integer()()()()()()()()()...()"
+            ' In order to handle extremely "deep" types like "Integer()()()()()()()()().."
             ' we implement manual tail recursion rather than doing the natural recursion.
 
             Dim current As TypeSymbol = type

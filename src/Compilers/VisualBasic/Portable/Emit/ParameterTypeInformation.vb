@@ -18,9 +18,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Emit
             Me._underlyingParameter = underlyingParameter
         End Sub
 
-        Private ReadOnly Property IParameterTypeInformationCustomModifiers As ImmutableArray(Of Cci.ICustomModifier) Implements Cci.IParameterTypeInformation.CustomModifiers
+        Private ReadOnly Property IParameterTypeInformationCustomModifiers As ImmutableArray(Of CustomModifier) Implements Cci.IParameterTypeInformation.CustomModifiers
             Get
-                Return _underlyingParameter.CustomModifiers.As(Of Cci.ICustomModifier)
+                Return _underlyingParameter.CustomModifiers
             End Get
         End Property
 
@@ -30,9 +30,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Emit
             End Get
         End Property
 
-        Private ReadOnly Property IParameterTypeInformationRefCustomModifiers As ImmutableArray(Of Cci.ICustomModifier) Implements Cci.IParameterTypeInformation.RefCustomModifiers
+        Private ReadOnly Property IParameterTypeInformationRefCustomModifiers As ImmutableArray(Of CustomModifier) Implements Cci.IParameterTypeInformation.RefCustomModifiers
             Get
-                Return _underlyingParameter.RefCustomModifiers.As(Of Cci.ICustomModifier)
+                Return _underlyingParameter.RefCustomModifiers
             End Get
         End Property
 

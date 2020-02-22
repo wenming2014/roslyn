@@ -16,11 +16,11 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         Cci.IParameterTypeInformation,
         Cci.IParameterDefinition
     {
-        ImmutableArray<Cci.ICustomModifier> Cci.IParameterTypeInformation.CustomModifiers
+        ImmutableArray<CustomModifier> Cci.IParameterTypeInformation.CustomModifiers
         {
             get
             {
-                return this.TypeWithAnnotations.CustomModifiers.As<Cci.ICustomModifier>();
+                return this.TypeWithAnnotations.CustomModifiers;
             }
         }
 
@@ -32,11 +32,11 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             }
         }
 
-        ImmutableArray<Cci.ICustomModifier> Cci.IParameterTypeInformation.RefCustomModifiers
+        ImmutableArray<CustomModifier> Cci.IParameterTypeInformation.RefCustomModifiers
         {
             get
             {
-                return this.RefCustomModifiers.As<Cci.ICustomModifier>();
+                return this.RefCustomModifiers;
             }
         }
 

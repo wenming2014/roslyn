@@ -21,7 +21,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             }
             else
             {
-                return new Cci.ModifiedTypeReference(type, this.PointedAtTypeWithAnnotations.CustomModifiers.As<Cci.ICustomModifier>());
+                return new Cci.ModifiedTypeReference(type, this.PointedAtTypeWithAnnotations.CustomModifiers);
             }
         }
 

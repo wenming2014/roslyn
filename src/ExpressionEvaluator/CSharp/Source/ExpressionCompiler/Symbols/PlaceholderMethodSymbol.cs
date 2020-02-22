@@ -171,11 +171,11 @@ namespace Microsoft.CodeAnalysis.CSharp.ExpressionEvaluator
         // This should be inherited from the base class implementation, but it does not currently work with Nullable
         // Reference Types.
         // https://github.com/dotnet/roslyn/issues/39167
-        ImmutableArray<Cci.ICustomModifier> Cci.ISignature.RefCustomModifiers
+        ImmutableArray<CustomModifier> Cci.ISignature.RefCustomModifiers
         {
             get
             {
-                return this.RefCustomModifiers.As<Cci.ICustomModifier>();
+                return this.RefCustomModifiers;
             }
         }
 

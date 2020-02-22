@@ -22,11 +22,11 @@ namespace Microsoft.CodeAnalysis.CSharp.Emit
             _underlyingParameter = underlyingParameter;
         }
 
-        ImmutableArray<Cci.ICustomModifier> Cci.IParameterTypeInformation.CustomModifiers
+        ImmutableArray<CustomModifier> Cci.IParameterTypeInformation.CustomModifiers
         {
             get
             {
-                return _underlyingParameter.TypeWithAnnotations.CustomModifiers.As<Cci.ICustomModifier>();
+                return _underlyingParameter.TypeWithAnnotations.CustomModifiers;
             }
         }
 
@@ -38,11 +38,11 @@ namespace Microsoft.CodeAnalysis.CSharp.Emit
             }
         }
 
-        ImmutableArray<Cci.ICustomModifier> Cci.IParameterTypeInformation.RefCustomModifiers
+        ImmutableArray<CustomModifier> Cci.IParameterTypeInformation.RefCustomModifiers
         {
             get
             {
-                return _underlyingParameter.RefCustomModifiers.As<Cci.ICustomModifier>();
+                return _underlyingParameter.RefCustomModifiers;
             }
         }
 
@@ -78,9 +78,9 @@ namespace Microsoft.CodeAnalysis.CSharp.Emit
             _type = type;
         }
 
-        ImmutableArray<Cci.ICustomModifier> Cci.IParameterTypeInformation.CustomModifiers
+        ImmutableArray<CustomModifier> Cci.IParameterTypeInformation.CustomModifiers
         {
-            get { return ImmutableArray<Cci.ICustomModifier>.Empty; }
+            get { return ImmutableArray<CustomModifier>.Empty; }
         }
 
         bool Cci.IParameterTypeInformation.IsByReference
@@ -88,9 +88,9 @@ namespace Microsoft.CodeAnalysis.CSharp.Emit
             get { return _isByRef; }
         }
 
-        ImmutableArray<Cci.ICustomModifier> Cci.IParameterTypeInformation.RefCustomModifiers
+        ImmutableArray<CustomModifier> Cci.IParameterTypeInformation.RefCustomModifiers
         {
-            get { return ImmutableArray<Cci.ICustomModifier>.Empty; }
+            get { return ImmutableArray<CustomModifier>.Empty; }
         }
 
         Cci.ITypeReference Cci.IParameterTypeInformation.GetType(EmitContext context)
