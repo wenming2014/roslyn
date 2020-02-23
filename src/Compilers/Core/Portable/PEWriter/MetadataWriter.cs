@@ -428,7 +428,7 @@ namespace Microsoft.Cci
         private IReference[] _pseudoSymbolTokenToReferenceMap;
         private UserStringHandle[] _pseudoStringTokenToTokenMap;
         private bool _userStringTokenOverflow;
-        private List<string> _pseudoStringTokenToStringMap;
+        private string[] _pseudoStringTokenToStringMap;
         private ReferenceIndexer _referenceVisitor;
 
         protected readonly MetadataBuilder metadata;
@@ -498,14 +498,8 @@ namespace Microsoft.Cci
 
         private void CreateUserStringIndices()
         {
-            _pseudoStringTokenToStringMap = new List<string>();
-
-            foreach (string str in this.module.GetStrings())
-            {
-                _pseudoStringTokenToStringMap.Add(str);
-            }
-
-            _pseudoStringTokenToTokenMap = new UserStringHandle[_pseudoStringTokenToStringMap.Count];
+            _pseudoStringTokenToStringMap = module.GetStrings();
+            _pseudoStringTokenToTokenMap = new UserStringHandle[_pseudoStringTokenToStringMap.Length];
         }
 
         private void CreateIndicesForModule()
