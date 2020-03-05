@@ -426,5 +426,50 @@ data class C(); ";
                 Diagnostic(ErrorCode.ERR_BadRecordDeclaration, "()").WithLocation(2, 13)
             );
         }
+
+        [Fact]
+        public void Wither1()
+        {
+            var src = @"
+using System;
+data class C(int X, string Y)
+{
+    public static void Main()
+    {
+        var c = new C(0, ""abc"");
+        Console.WriteLine(c.X + "" "" + c.Y);
+        var c2 = c.With(1, ""def"");
+        Console.WriteLine(c2.X + "" "" + c2.Y);
+        Console.WriteLine(c.X + "" "" + c.Y);
+    }
+}";
+
+            var verifier = CompileAndVerify(src, expectedOutput: @"0 abc
+1 def
+0 abc");
+        }
+
+        [Fact]
+        public void Wither2()
+        {
+            var src = @"
+using System;
+data class C(int X, string Y)
+{
+    public C With(int X, string Y) => new C(5, ""xyz"");
+    public static void Main()
+    {
+        var c = new C(0, ""abc"");
+        Console.WriteLine(c.X + "" "" + c.Y);
+        var c2 = c.With(1, ""def"");
+        Console.WriteLine(c2.X + "" "" + c2.Y);
+        Console.WriteLine(c.X + "" "" + c.Y);
+    }
+}";
+
+            var verifier = CompileAndVerify(src, expectedOutput: @"0 abc
+5 xyz
+0 abc");
+        }
     }
 }

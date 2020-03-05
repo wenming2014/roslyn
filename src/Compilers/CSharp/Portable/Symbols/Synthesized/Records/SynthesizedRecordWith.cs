@@ -87,7 +87,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         public override bool IsVirtual => true;
 
-        public override bool IsOverride => true;
+        public override bool IsOverride => false;
 
         public override bool IsAbstract => false;
 

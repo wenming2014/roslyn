@@ -167,5 +167,75 @@ data class C(int x, string y)
             Assert.Equal(c, getAccessor.ContainingSymbol);
             Assert.Equal(c, getAccessor.ContainingType);
         }
+
+        [Fact]
+        public void GeneratedWither()
+        {
+            var comp = CreateCompilation("data class C(int X, string Y);");
+            comp.VerifyDiagnostics();
+            var wither = (MethodSymbol)comp.GlobalNamespace.GetTypeMember("C").GetMember("With");
+
+            Assert.Equal(2, wither.ParameterCount);
+
+            Assert.Equal(SpecialType.System_Int32, wither.Parameters[0].Type.SpecialType);
+            Assert.Equal("X", wither.Parameters[0].Name);
+
+            Assert.Equal(SpecialType.System_String, wither.Parameters[1].Type.SpecialType);
+            Assert.Equal("Y", wither.Parameters[1].Name);
+        }
+
+        [Fact]
+        public void GeneratedWither2()
+        {
+            var comp = CreateCompilation(@"
+data class C(int X, string Y)
+{
+    public C With(int X) => null;
+}");
+            comp.VerifyDiagnostics();
+            var c = comp.GlobalNamespace.GetTypeMember("C");
+
+            var withers = c.GetMembers("With");
+            Assert.Equal(2, withers.Length);
+
+            var wither = (MethodSymbol)withers[0];
+
+            Assert.Equal(1, wither.ParameterCount);
+
+            Assert.Equal(SpecialType.System_Int32, wither.Parameters[0].Type.SpecialType);
+            Assert.Equal("X", wither.Parameters[0].Name);
+
+            wither = (MethodSymbol)withers[1];
+
+            Assert.Equal(2, wither.ParameterCount);
+
+            Assert.Equal(SpecialType.System_Int32, wither.Parameters[0].Type.SpecialType);
+            Assert.Equal("X", wither.Parameters[0].Name);
+
+            Assert.Equal(SpecialType.System_String, wither.Parameters[1].Type.SpecialType);
+            Assert.Equal("Y", wither.Parameters[1].Name);
+        }
+
+        [Fact]
+        public void GeneratedWither3()
+        {
+            var comp = CreateCompilation(@"
+data class C(int X, string Y)
+{
+    public C With(int X, string Y) => null;
+}");
+            comp.VerifyDiagnostics();
+            var c = comp.GlobalNamespace.GetTypeMember("C");
+
+            var wither = (MethodSymbol)c.GetMember("With");
+
+            Assert.Equal(2, wither.ParameterCount);
+
+            Assert.Equal(SpecialType.System_Int32, wither.Parameters[0].Type.SpecialType);
+            Assert.Equal("X", wither.Parameters[0].Name);
+
+            Assert.Equal(SpecialType.System_String, wither.Parameters[1].Type.SpecialType);
+            Assert.Equal("Y", wither.Parameters[1].Name);
+        }
     }
 }
