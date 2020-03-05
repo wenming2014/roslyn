@@ -2929,6 +2929,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             addObjectEquals();
             addHashCode();
             addThisEquals();
+            addWither(ctor);
 
             return;
 
@@ -2987,6 +2988,15 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 if (!memberSignatures.Contains(thisEquals))
                 {
                     members.Add(thisEquals);
+                }
+            }
+
+            void addWither(SynthesizedRecordConstructor recordCtor)
+            {
+                var wither = new SynthesizedRecordWith(recordCtor);
+                if (!memberSignatures.Contains(wither))
+                {
+                    members.Add(wither);
                 }
             }
         }
